@@ -185,8 +185,12 @@ func (e *chromiumedge) Embed(hwnd uintptr) bool {
 	windows.GetModuleFileName(windows.Handle(0), &currentExePath[0], windows.MAX_PATH)
 	currentExeName := filepath.Base(windows.UTF16ToString(currentExePath))
 	dataPath := filepath.Join(os.Getenv("AppData"), currentExeName)
-	res := createCoreWebView2EnvironmentWithOptions(nil, windows.StringToUTF16Ptr(dataPath), 0, e.envCompleted)
-	if res != 0 {
+	res, err := createCoreWebView2EnvironmentWithOptions(nil, windows.StringToUTF16Ptr(dataPath), 0, e.envCompleted)
+	if err != nil {
+		log.Printf("Error calling Webview2Loader: %v", err)
+		return false
+	} else if res != 0 {
+		log.Printf("Result: %08x", res)
 		return false
 	}
 	var msg _Msg
@@ -208,18 +212,6 @@ func (e *chromiumedge) Embed(hwnd uintptr) bool {
 	}
 	e.Init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}")
 	return true
-}
-
-func (e *chromiumedge) Resize() {
-	if e.controller == nil {
-		return
-	}
-	var bounds _Rect
-	user32GetClientRect.Call(e.hwnd, uintptr(unsafe.Pointer(&bounds)))
-	e.controller.vtbl.PutBounds.Call(
-		uintptr(unsafe.Pointer(e.controller)),
-		uintptr(unsafe.Pointer(&bounds)),
-	)
 }
 
 func (e *chromiumedge) Navigate(url string) {
@@ -258,6 +250,9 @@ func (e *chromiumedge) Release() uintptr {
 }
 
 func (e *chromiumedge) EnvironmentCompleted(res uintptr, env *iCoreWebView2Environment) uintptr {
+	if int64(res) < 0 {
+		log.Fatalf("Creating environment failed with %08x", res)
+	}
 	env.vtbl.CreateCoreWebView2Controller.Call(
 		uintptr(unsafe.Pointer(env)),
 		e.hwnd,
@@ -267,32 +262,29 @@ func (e *chromiumedge) EnvironmentCompleted(res uintptr, env *iCoreWebView2Envir
 }
 
 func (e *chromiumedge) ControllerCompleted(res uintptr, controller *iCoreWebView2Controller) uintptr {
+	if int64(res) < 0 {
+		log.Fatalf("Creating controller failed with %08x", res)
+	}
 	controller.vtbl.AddRef.Call(uintptr(unsafe.Pointer(controller)))
+	e.controller = controller
 
-	var webview *iCoreWebView2
 	var token _EventRegistrationToken
 	controller.vtbl.GetCoreWebView2.Call(
 		uintptr(unsafe.Pointer(controller)),
-		uintptr(unsafe.Pointer(&webview)),
-	)
-	webview.vtbl.AddWebMessageReceived.Call(
-		uintptr(unsafe.Pointer(webview)),
-		uintptr(unsafe.Pointer(e.webMessageReceived)),
-		uintptr(unsafe.Pointer(&token)),
-	)
-	webview.vtbl.AddPermissionRequested.Call(
-		uintptr(unsafe.Pointer(webview)),
-		uintptr(unsafe.Pointer(e.permissionRequested)),
-		uintptr(unsafe.Pointer(&token)),
-	)
-
-	e.controller = controller
-	e.controller.vtbl.GetCoreWebView2.Call(
-		uintptr(unsafe.Pointer(e.controller)),
 		uintptr(unsafe.Pointer(&e.webview)),
 	)
 	e.webview.vtbl.AddRef.Call(
 		uintptr(unsafe.Pointer(e.webview)),
+	)
+	e.webview.vtbl.AddWebMessageReceived.Call(
+		uintptr(unsafe.Pointer(e.webview)),
+		uintptr(unsafe.Pointer(e.webMessageReceived)),
+		uintptr(unsafe.Pointer(&token)),
+	)
+	e.webview.vtbl.AddPermissionRequested.Call(
+		uintptr(unsafe.Pointer(e.webview)),
+		uintptr(unsafe.Pointer(e.permissionRequested)),
+		uintptr(unsafe.Pointer(&token)),
 	)
 
 	atomic.StoreUintptr(&e.inited, 1)

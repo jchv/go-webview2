@@ -6,12 +6,8 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/jchv/go-webview2/webviewloader"
 	"golang.org/x/sys/windows"
-)
-
-var (
-	wvldr                                         = windows.NewLazyDLL("WebView2Loader")
-	wvldrCreateCoreWebView2EnvironmentWithOptions = wvldr.NewProc("CreateCoreWebView2EnvironmentWithOptions")
 )
 
 type _EventRegistrationToken struct {
@@ -38,17 +34,13 @@ const (
 	_CoreWebView2PermissionStateDeny
 )
 
-func createCoreWebView2EnvironmentWithOptions(browserExecutableFolder, userDataFolder *uint16, environmentOptions uintptr, environmentCompletedHandle *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler) uintptr {
-	if wvldr.Load() != nil {
-		return 0xFFFFFFFF
-	}
-	res, _, _ := wvldrCreateCoreWebView2EnvironmentWithOptions.Call(
-		uintptr(unsafe.Pointer(browserExecutableFolder)),
-		uintptr(unsafe.Pointer(userDataFolder)),
+func createCoreWebView2EnvironmentWithOptions(browserExecutableFolder, userDataFolder *uint16, environmentOptions uintptr, environmentCompletedHandle *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler) (uintptr, error) {
+	return webviewloader.CreateCoreWebView2EnvironmentWithOptions(
+		browserExecutableFolder,
+		userDataFolder,
 		environmentOptions,
 		uintptr(unsafe.Pointer(environmentCompletedHandle)),
 	)
-	return res
 }
 
 // ComProc stores a COM procedure.
