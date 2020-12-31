@@ -43,6 +43,10 @@ var (
 	user32PostQuitMessage    = user32.NewProc("PostQuitMessage")
 	user32SetWindowTextW     = user32.NewProc("SetWindowTextW")
 	user32PostThreadMessageW = user32.NewProc("PostThreadMessageW")
+	user32GetWindowLongPtrW  = user32.NewProc("GetWindowLongPtrW")
+	user32SetWindowLongPtrW  = user32.NewProc("SetWindowLongPtrW")
+	user32AdjustWindowRect   = user32.NewProc("AdjustWindowRect")
+	user32SetWindowPos       = user32.NewProc("SetWindowPos")
 
 	defaultHeap uintptr
 )
@@ -74,12 +78,33 @@ const (
 )
 
 const (
+	_SWPNoZOrder     = 0x0004
+	_SWPNoActivate   = 0x0010
+	_SWPNoMove       = 0x0002
+	_SWPFrameChanged = 0x0020
+)
+
+const (
 	_WMDestroy       = 0x0002
 	_WMSize          = 0x0005
 	_WMClose         = 0x0010
 	_WMQuit          = 0x0012
 	_WMGetMinMaxInfo = 0x0024
 	_WMApp           = 0x8000
+)
+
+const (
+	_GWLStyle = -16
+)
+
+const (
+	_WSOverlapped       = 0x00000000
+	_WSMaximizeBox      = 0x00020000
+	_WSThickFrame       = 0x00040000
+	_WSCaption          = 0x00C00000
+	_WSSysMenu          = 0x00080000
+	_WSMinimizeBox      = 0x00020000
+	_WSOverlappedWindow = (_WSOverlapped | _WSCaption | _WSSysMenu | _WSThickFrame | _WSMinimizeBox | _WSMaximizeBox)
 )
 
 type _WndClassExW struct {
@@ -116,6 +141,14 @@ type _Msg struct {
 	time     uint32
 	pt       _Point
 	lPrivate uint32
+}
+
+type _MinMaxInfo struct {
+	ptReserved     _Point
+	ptMaxSize      _Point
+	ptMaxPosition  _Point
+	ptMinTrackSize _Point
+	ptMaxTrackSize _Point
 }
 
 func init() {
@@ -168,6 +201,8 @@ type webview struct {
 	hwnd       uintptr
 	mainthread uintptr
 	browser    browser
+	maxsz      _Point
+	minsz      _Point
 }
 
 func newchromiumedge() *chromiumedge {
@@ -346,7 +381,14 @@ func wndproc(hwnd, msg, wp, lp uintptr) uintptr {
 		case _WMDestroy:
 			w.Terminate()
 		case _WMGetMinMaxInfo:
-			// TODO
+			lpmmi := (*_MinMaxInfo)(unsafe.Pointer(lp))
+			if w.maxsz.x > 0 && w.maxsz.y > 0 {
+				lpmmi.ptMaxSize = w.maxsz
+				lpmmi.ptMaxTrackSize = w.maxsz
+			}
+			if w.minsz.x > 0 && w.minsz.y > 0 {
+				lpmmi.ptMinTrackSize = w.minsz
+			}
 		default:
 			r, _, _ := user32DefWindowProcW.Call(hwnd, msg, wp, lp)
 			return r
@@ -440,8 +482,34 @@ func (w *webview) SetTitle(title string) {
 	user32SetWindowTextW.Call(w.hwnd, uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(title))))
 }
 
-func (w *webview) SetSize(width int, height int, hint Hint) {
-	// TODO
+func (w *webview) SetSize(width int, height int, hints Hint) {
+	index := _GWLStyle
+	style, _, _ := user32GetWindowLongPtrW.Call(w.hwnd, uintptr(index))
+	if hints == HintFixed {
+		style &^= (_WSThickFrame | _WSMaximizeBox)
+	} else {
+		style |= (_WSThickFrame | _WSMaximizeBox)
+	}
+	user32SetWindowLongPtrW.Call(w.hwnd, uintptr(index), style)
+
+	if hints == HintMax {
+		w.maxsz.x = int32(width)
+		w.maxsz.y = int32(height)
+	} else if hints == HintMin {
+		w.minsz.x = int32(width)
+		w.minsz.y = int32(height)
+	} else {
+		r := _Rect{}
+		r.Left = 0
+		r.Top = 0
+		r.Right = int32(width)
+		r.Bottom = int32(height)
+		user32AdjustWindowRect.Call(uintptr(unsafe.Pointer(&r)), _WSOverlappedWindow, 0)
+		user32SetWindowPos.Call(
+			w.hwnd, 0, uintptr(r.Left), uintptr(r.Top), uintptr(r.Right-r.Left), uintptr(r.Bottom-r.Top),
+			_SWPNoZOrder|_SWPNoActivate|_SWPNoMove|_SWPFrameChanged)
+		w.browser.Resize()
+	}
 }
 
 func (w *webview) Init(js string) {
