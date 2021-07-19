@@ -3,10 +3,14 @@
 package webview2
 
 import (
+	"encoding/json"
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -21,9 +25,6 @@ var (
 	ole32CoInitializeEx = ole32.NewProc("CoInitializeEx")
 
 	kernel32                   = windows.NewLazySystemDLL("kernel32")
-	kernel32GetProcessHeap     = kernel32.NewProc("GetProcessHeap")
-	kernel32HeapAlloc          = kernel32.NewProc("HeapAlloc")
-	kernel32HeapFree           = kernel32.NewProc("HeapFree")
 	kernel32GetCurrentThreadID = kernel32.NewProc("GetCurrentThreadId")
 
 	user32                   = windows.NewLazySystemDLL("user32")
@@ -47,8 +48,6 @@ var (
 	user32SetWindowLongPtrW  = user32.NewProc("SetWindowLongPtrW")
 	user32AdjustWindowRect   = user32.NewProc("AdjustWindowRect")
 	user32SetWindowPos       = user32.NewProc("SetWindowPos")
-
-	defaultHeap uintptr
 )
 
 var (
@@ -155,11 +154,9 @@ func init() {
 	runtime.LockOSThread()
 
 	r, _, _ := ole32CoInitializeEx.Call(0, 2)
-	if r < 0 {
+	if int(r) < 0 {
 		log.Printf("Warning: CoInitializeEx call failed: E=%08x", r)
 	}
-
-	defaultHeap, _, _ = kernel32GetProcessHeap.Call()
 }
 
 func utf16PtrToString(p *uint16) string {
@@ -203,10 +200,13 @@ type webview struct {
 	browser    browser
 	maxsz      _Point
 	minsz      _Point
+	m          sync.Mutex
+	bindings   map[string]interface{}
+	dispatchq  []func()
 }
 
-func newchromiumedge() *chromiumedge {
-	e := &chromiumedge{}
+func newchromiumedge(msgcb func(string)) *chromiumedge {
+	e := &chromiumedge{msgcb: msgcb}
 	e.envCompleted = newICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler(e)
 	e.controllerCompleted = newICoreWebView2CreateCoreWebView2ControllerCompletedHandler(e)
 	e.webMessageReceived = newICoreWebView2WebMessageReceivedEventHandler(e)
@@ -363,12 +363,104 @@ func New(debug bool) WebView { return NewWindow(debug, nil) }
 // NewWindow creates a new webview using an existing window.
 func NewWindow(debug bool, window unsafe.Pointer) WebView {
 	w := &webview{}
-	w.browser = newchromiumedge()
+	w.bindings = map[string]interface{}{}
+	w.browser = newchromiumedge(w.msgcb)
 	w.mainthread, _, _ = kernel32GetCurrentThreadID.Call()
 	if !w.Create(debug, window) {
 		return nil
 	}
 	return w
+}
+
+type rpcMessage struct {
+	ID     int               `json:"id"`
+	Method string            `json:"method"`
+	Params []json.RawMessage `json:"params"`
+}
+
+func jsString(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
+
+func (w *webview) msgcb(msg string) {
+	d := rpcMessage{}
+	if err := json.Unmarshal([]byte(msg), &d); err != nil {
+		log.Printf("invalid RPC message: %v", err)
+		return
+	}
+
+	id := strconv.Itoa(d.ID)
+	if res, err := w.callbinding(d); err != nil {
+		w.Dispatch(func() {
+			w.Eval("window._rpc[" + id + "].reject(" + jsString(err.Error()) + "); window._rpc[" + id + "] = undefined")
+		})
+	} else if b, err := json.Marshal(res); err != nil {
+		w.Dispatch(func() {
+			w.Eval("window._rpc[" + id + "].reject(" + jsString(err.Error()) + "); window._rpc[" + id + "] = undefined")
+		})
+	} else {
+		w.Dispatch(func() {
+			w.Eval("window._rpc[" + id + "].resolve(" + string(b) + "); window._rpc[" + id + "] = undefined")
+		})
+	}
+}
+
+func (w *webview) callbinding(d rpcMessage) (interface{}, error) {
+	w.m.Lock()
+	f, ok := w.bindings[d.Method]
+	w.m.Unlock()
+	if !ok {
+		return nil, nil
+	}
+
+	v := reflect.ValueOf(f)
+	isVariadic := v.Type().IsVariadic()
+	numIn := v.Type().NumIn()
+	if (isVariadic && len(d.Params) < numIn-1) || (!isVariadic && len(d.Params) != numIn) {
+		return nil, errors.New("function arguments mismatch")
+	}
+	args := []reflect.Value{}
+	for i := range d.Params {
+		var arg reflect.Value
+		if isVariadic && i >= numIn-1 {
+			arg = reflect.New(v.Type().In(numIn - 1).Elem())
+		} else {
+			arg = reflect.New(v.Type().In(i))
+		}
+		if err := json.Unmarshal(d.Params[i], arg.Interface()); err != nil {
+			return nil, err
+		}
+		args = append(args, arg.Elem())
+	}
+
+	errorType := reflect.TypeOf((*error)(nil)).Elem()
+	res := v.Call(args)
+	switch len(res) {
+	case 0:
+		// No results from the function, just return nil
+		return nil, nil
+
+	case 1:
+		// One result may be a value, or an error
+		if res[0].Type().Implements(errorType) {
+			if res[0].Interface() != nil {
+				return nil, res[0].Interface().(error)
+			}
+			return nil, nil
+		}
+		return res[0].Interface(), nil
+
+	case 2:
+		// Two results: first one is value, second is error
+		if !res[1].Type().Implements(errorType) {
+			return nil, errors.New("second return value must be an error")
+		}
+		if res[1].Interface() == nil {
+			return res[0].Interface(), nil
+		}
+		return res[0].Interface(), res[1].Interface().(error)
+
+	default:
+		return nil, errors.New("unexpected number of return values")
+	}
 }
 
 func wndproc(hwnd, msg, wp, lp uintptr) uintptr {
@@ -457,7 +549,13 @@ func (w *webview) Run() {
 			0,
 		)
 		if msg.message == _WMApp {
-
+			w.m.Lock()
+			q := append([]func(){}, w.dispatchq...)
+			w.dispatchq = []func(){}
+			w.m.Unlock()
+			for _, v := range q {
+				v()
+			}
 		} else if msg.message == _WMQuit {
 			return
 		}
@@ -521,10 +619,42 @@ func (w *webview) Eval(js string) {
 }
 
 func (w *webview) Dispatch(f func()) {
-	// TODO
+	w.m.Lock()
+	w.dispatchq = append(w.dispatchq, f)
+	w.m.Unlock()
+	user32PostThreadMessageW.Call(w.mainthread, _WMApp, 0, 0)
 }
 
 func (w *webview) Bind(name string, f interface{}) error {
-	// TODO
+	v := reflect.ValueOf(f)
+	if v.Kind() != reflect.Func {
+		return errors.New("only functions can be bound")
+	}
+	if n := v.Type().NumOut(); n > 2 {
+		return errors.New("function may only return a value or a value+error")
+	}
+	w.m.Lock()
+	w.bindings[name] = f
+	w.m.Unlock()
+
+	w.Init("(function() { var name = " + jsString(name) + ";" + `
+		var RPC = window._rpc = (window._rpc || {nextSeq: 1});
+		window[name] = function() {
+		  var seq = RPC.nextSeq++;
+		  var promise = new Promise(function(resolve, reject) {
+			RPC[seq] = {
+			  resolve: resolve,
+			  reject: reject,
+			};
+		  });
+		  window.external.invoke(JSON.stringify({
+			id: seq,
+			method: name,
+			params: Array.prototype.slice.call(arguments),
+		  }));
+		  return promise;
+		}
+	})()`)
+
 	return nil
 }
