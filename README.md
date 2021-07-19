@@ -1,5 +1,5 @@
 # go-webview2
-This is a proof of concept for embedding Webview2 into Go without CGo. It is based on [webview/webview](https://github.com/webview/webview) and provides a compatible API sans some unimplemented functionality (notably, bindings are not implemented.)
+This is a proof of concept for embedding Webview2 into Go without CGo. It is based on [webview/webview](https://github.com/webview/webview) and provides a compatible API.
 
 ## Notice
 Because this version doesn't currently have an EdgeHTML fallback, it will not work unless you have a Webview2 runtime installed. In addition, it requires the Webview2Loader DLL in order to function. Adding an EdgeHTML fallback should be technically possible but will likely require much worse hacks since the API is not strictly COM to my knowledge.
