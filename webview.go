@@ -9,7 +9,6 @@ import (
 	"github.com/jchv/go-webview2/pkg/edge"
 	"log"
 	"reflect"
-	"runtime"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -32,15 +31,6 @@ func setWindowContext(wnd uintptr, data interface{}) {
 	windowContextSync.Lock()
 	defer windowContextSync.Unlock()
 	windowContext[wnd] = data
-}
-
-func init() {
-	runtime.LockOSThread()
-
-	r, _, _ := w32.Ole32CoInitializeEx.Call(0, 2)
-	if int(r) < 0 {
-		log.Printf("Warning: CoInitializeEx call failed: E=%08x", r)
-	}
 }
 
 type browser interface {
@@ -71,7 +61,7 @@ func NewWindow(debug bool, window unsafe.Pointer) WebView {
 	w.bindings = map[string]interface{}{}
 
 	chromium := edge.NewChromium()
-	//chromium.MessageCallback = w.msgcb
+	chromium.MessageCallback = w.msgcb
 	chromium.Debug = debug
 
 	w.browser = chromium

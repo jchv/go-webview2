@@ -3,12 +3,24 @@
 package edge
 
 import (
+	"github.com/jchv/go-webview2/internal/w32"
+	"log"
+	"runtime"
 	"syscall"
 	"unsafe"
 
 	"github.com/jchv/go-webview2/webviewloader"
 	"golang.org/x/sys/windows"
 )
+
+func init() {
+	runtime.LockOSThread()
+
+	r, _, _ := w32.Ole32CoInitializeEx.Call(0, 2)
+	if int(r) < 0 {
+		log.Printf("Warning: CoInitializeEx call failed: E=%08x", r)
+	}
+}
 
 type _EventRegistrationToken struct {
 	value int64
