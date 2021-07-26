@@ -17,8 +17,6 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-
-
 var (
 	windowContext     = map[uintptr]interface{}{}
 	windowContextSync sync.RWMutex
@@ -63,8 +61,6 @@ type webview struct {
 	bindings   map[string]interface{}
 	dispatchq  []func()
 }
-
-
 
 // New creates a new webview in a new window.
 func New(debug bool) WebView { return NewWindow(debug, nil) }
@@ -209,19 +205,22 @@ func (w *webview) Create(debug bool, window unsafe.Pointer) bool {
 
 	icon, _, _ := w32.User32LoadImageW.Call(uintptr(hinstance), 32512, icow, icoh, 0)
 
+	className, _ := windows.UTF16PtrFromString("webview")
 	wc := w32.WndClassExW{
 		CbSize:        uint32(unsafe.Sizeof(w32.WndClassExW{})),
 		HInstance:     hinstance,
-		LpszClassName: windows.StringToUTF16Ptr("webview"),
+		LpszClassName: className,
 		HIcon:         windows.Handle(icon),
 		HIconSm:       windows.Handle(icon),
 		LpfnWndProc:   windows.NewCallback(wndproc),
 	}
 	w32.User32RegisterClassExW.Call(uintptr(unsafe.Pointer(&wc)))
+
+	windowName, _ := windows.UTF16PtrFromString("")
 	w.hwnd, _, _ = w32.User32CreateWindowExW.Call(
 		0,
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr("webview"))),
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(""))),
+		uintptr(unsafe.Pointer(className)),
+		uintptr(unsafe.Pointer(windowName)),
 		0xCF0000,   // WS_OVERLAPPEDWINDOW
 		0x80000000, // CW_USEDEFAULT
 		0x80000000, // CW_USEDEFAULT
@@ -286,7 +285,11 @@ func (w *webview) Navigate(url string) {
 }
 
 func (w *webview) SetTitle(title string) {
-	w32.User32SetWindowTextW.Call(w.hwnd, uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(title))))
+	_title, err := windows.UTF16FromString(title)
+	if err != nil {
+		_title, _ = windows.UTF16FromString("")
+	}
+	w32.User32SetWindowTextW.Call(w.hwnd, uintptr(unsafe.Pointer(&_title[0])))
 }
 
 func (w *webview) SetSize(width int, height int, hints Hint) {
