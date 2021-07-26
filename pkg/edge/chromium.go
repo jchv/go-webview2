@@ -21,15 +21,21 @@ type Chromium struct {
 	controllerCompleted *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler
 	webMessageReceived  *iCoreWebView2WebMessageReceivedEventHandler
 	permissionRequested *iCoreWebView2PermissionRequestedEventHandler
-	msgcb               func(string)
+
+	// Settings
+	Debug bool
+
+	// Callbacks
+	MessageCallback func(string)
 }
 
-func NewChromium(msgcb func(string)) *Chromium {
-	e := &Chromium{msgcb: msgcb}
+func NewChromium() *Chromium {
+	e := &Chromium{}
 	e.envCompleted = newICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler(e)
 	e.controllerCompleted = newICoreWebView2CreateCoreWebView2ControllerCompletedHandler(e)
 	e.webMessageReceived = newICoreWebView2WebMessageReceivedEventHandler(e)
 	e.permissionRequested = newICoreWebView2PermissionRequestedEventHandler(e)
+
 	return e
 }
 
@@ -156,7 +162,9 @@ func (e *Chromium) MessageReceived(sender *iCoreWebView2, args *iCoreWebView2Web
 		uintptr(unsafe.Pointer(args)),
 		uintptr(unsafe.Pointer(&message)),
 	)
-	e.msgcb(w32.Utf16PtrToString(message))
+	if e.MessageCallback != nil {
+		e.MessageCallback(w32.Utf16PtrToString(message))
+	}
 	sender.vtbl.PostWebMessageAsString.Call(
 		uintptr(unsafe.Pointer(sender)),
 		uintptr(unsafe.Pointer(message)),

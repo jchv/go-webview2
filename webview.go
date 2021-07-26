@@ -69,7 +69,12 @@ func New(debug bool) WebView { return NewWindow(debug, nil) }
 func NewWindow(debug bool, window unsafe.Pointer) WebView {
 	w := &webview{}
 	w.bindings = map[string]interface{}{}
-	w.browser = edge.NewChromium(w.msgcb)
+
+	chromium := edge.NewChromium()
+	//chromium.MessageCallback = w.msgcb
+	chromium.Debug = debug
+
+	w.browser = chromium
 	w.mainthread, _, _ = w32.Kernel32GetCurrentThreadID.Call()
 	if !w.Create(debug, window) {
 		return nil
