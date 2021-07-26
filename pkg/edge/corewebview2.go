@@ -1,6 +1,6 @@
 // +build windows
 
-package webview2
+package edge
 
 import (
 	"syscall"
