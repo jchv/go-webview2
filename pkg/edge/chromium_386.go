@@ -1,17 +1,17 @@
 // +build windows
 
-package webview2
+package edge
 
 import (
 	"unsafe"
 )
 
-func (e *chromiumedge) Resize() {
+func (e *Chromium) Resize() {
 	if e.controller == nil {
 		return
 	}
-	var bounds _Rect
-	user32GetClientRect.Call(e.hwnd, uintptr(unsafe.Pointer(&bounds)))
+	var bounds w32.Rect
+	w32.User32GetClientRect.Call(e.hwnd, uintptr(unsafe.Pointer(&bounds)))
 	e.controller.vtbl.PutBounds.Call(
 		uintptr(unsafe.Pointer(e.controller)),
 		uintptr(bounds.Left),
