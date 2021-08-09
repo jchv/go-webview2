@@ -13,20 +13,23 @@ import (
 )
 
 type Chromium struct {
-	hwnd                uintptr
-	controller          *iCoreWebView2Controller
-	webview             *iCoreWebView2
-	inited              uintptr
-	envCompleted        *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
-	controllerCompleted *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler
-	webMessageReceived  *iCoreWebView2WebMessageReceivedEventHandler
-	permissionRequested *iCoreWebView2PermissionRequestedEventHandler
+	hwnd                 uintptr
+	controller           *iCoreWebView2Controller
+	webview              *ICoreWebView2
+	inited               uintptr
+	envCompleted         *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
+	controllerCompleted  *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler
+	webMessageReceived   *iCoreWebView2WebMessageReceivedEventHandler
+	permissionRequested  *iCoreWebView2PermissionRequestedEventHandler
+	webResourceRequested *iCoreWebView2WebResourceRequestedEventHandler
+	environment          *ICoreWebView2Environment
 
 	// Settings
 	Debug bool
 
 	// Callbacks
-	MessageCallback func(string)
+	MessageCallback              func(string)
+	WebResourceRequestedCallback func(request *ICoreWebView2WebResourceRequest, args *ICoreWebView2WebResourceRequestedEventArgs)
 }
 
 func NewChromium() *Chromium {
@@ -35,6 +38,7 @@ func NewChromium() *Chromium {
 	e.controllerCompleted = newICoreWebView2CreateCoreWebView2ControllerCompletedHandler(e)
 	e.webMessageReceived = newICoreWebView2WebMessageReceivedEventHandler(e)
 	e.permissionRequested = newICoreWebView2PermissionRequestedEventHandler(e)
+	e.webResourceRequested = newICoreWebView2WebResourceRequestedEventHandler(e)
 
 	return e
 }
@@ -113,10 +117,11 @@ func (e *Chromium) Release() uintptr {
 	return 1
 }
 
-func (e *Chromium) EnvironmentCompleted(res uintptr, env *iCoreWebView2Environment) uintptr {
+func (e *Chromium) EnvironmentCompleted(res uintptr, env *ICoreWebView2Environment) uintptr {
 	if int64(res) < 0 {
 		log.Fatalf("Creating environment failed with %08x", res)
 	}
+	e.environment = env
 	env.vtbl.CreateCoreWebView2Controller.Call(
 		uintptr(unsafe.Pointer(env)),
 		e.hwnd,
@@ -150,13 +155,17 @@ func (e *Chromium) ControllerCompleted(res uintptr, controller *iCoreWebView2Con
 		uintptr(unsafe.Pointer(e.permissionRequested)),
 		uintptr(unsafe.Pointer(&token)),
 	)
-
+	e.webview.vtbl.AddWebResourceRequested.Call(
+		uintptr(unsafe.Pointer(e.webview)),
+		uintptr(unsafe.Pointer(e.webResourceRequested)),
+		uintptr(unsafe.Pointer(&token)),
+	)
 	atomic.StoreUintptr(&e.inited, 1)
 
 	return 0
 }
 
-func (e *Chromium) MessageReceived(sender *iCoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr {
+func (e *Chromium) MessageReceived(sender *ICoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr {
 	var message *uint16
 	args.vtbl.TryGetWebMessageAsString.Call(
 		uintptr(unsafe.Pointer(args)),
@@ -173,7 +182,7 @@ func (e *Chromium) MessageReceived(sender *iCoreWebView2, args *iCoreWebView2Web
 	return 0
 }
 
-func (e *Chromium) PermissionRequested(_ *iCoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr {
+func (e *Chromium) PermissionRequested(_ *ICoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr {
 	var kind _CoreWebView2PermissionKind
 	args.vtbl.GetPermissionKind.Call(
 		uintptr(unsafe.Pointer(args)),
@@ -186,4 +195,26 @@ func (e *Chromium) PermissionRequested(_ *iCoreWebView2, args *iCoreWebView2Perm
 		)
 	}
 	return 0
+}
+
+func (e *Chromium) WebResourceRequested(sender *ICoreWebView2, args *ICoreWebView2WebResourceRequestedEventArgs) uintptr {
+	req, err := args.GetRequest()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if e.WebResourceRequestedCallback != nil {
+		e.WebResourceRequestedCallback(req, args)
+	}
+	return 0
+}
+
+func (e *Chromium) AddWebResourceRequestedFilter(filter string, ctx COREWEBVIEW2_WEB_RESOURCE_CONTEXT) {
+	err := e.webview.AddWebResourceRequestedFilter(filter, ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (e *Chromium) Environment() *ICoreWebView2Environment {
+	return e.environment
 }

@@ -105,13 +105,13 @@ func (p ComProc) Call(a ...uintptr) (r1, r2 uintptr, lastErr error) {
 
 // IUnknown
 
-type iUnknownVtbl struct {
+type _IUnknownVtbl struct {
 	QueryInterface ComProc
 	AddRef         ComProc
 	Release        ComProc
 }
 
-type iUnknownImpl interface {
+type _IUnknownImpl interface {
 	QueryInterface(refiid, object uintptr) uintptr
 	AddRef() uintptr
 	Release() uintptr
@@ -120,7 +120,7 @@ type iUnknownImpl interface {
 // ICoreWebView2
 
 type iCoreWebView2Vtbl struct {
-	iUnknownVtbl
+	_IUnknownVtbl
 	GetSettings                            ComProc
 	GetSource                              ComProc
 	Navigate                               ComProc
@@ -181,14 +181,14 @@ type iCoreWebView2Vtbl struct {
 	RemoveWindowCloseRequested             ComProc
 }
 
-type iCoreWebView2 struct {
+type ICoreWebView2 struct {
 	vtbl *iCoreWebView2Vtbl
 }
 
 // ICoreWebView2Environment
 
 type iCoreWebView2EnvironmentVtbl struct {
-	iUnknownVtbl
+	_IUnknownVtbl
 	CreateCoreWebView2Controller     ComProc
 	CreateWebResourceResponse        ComProc
 	GetBrowserVersionString          ComProc
@@ -196,14 +196,49 @@ type iCoreWebView2EnvironmentVtbl struct {
 	RemoveNewBrowserVersionAvailable ComProc
 }
 
-type iCoreWebView2Environment struct {
+type ICoreWebView2Environment struct {
 	vtbl *iCoreWebView2EnvironmentVtbl
+}
+
+func (e *ICoreWebView2Environment) CreateWebResourceResponse(content []byte, statusCode int, reasonPhrase string, headers string) (*ICoreWebView2WebResourceResponse, error) {
+	var err error
+
+	// Create stream for response
+	stream, err := w32.SHCreateMemStream(content)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert string 'uri' to *uint16
+	_reason, err := windows.UTF16PtrFromString(reasonPhrase)
+	if err != nil {
+		return nil, err
+	}
+	// Convert string 'uri' to *uint16
+	_headers, err := windows.UTF16PtrFromString(headers)
+	if err != nil {
+		return nil, err
+	}
+	var response *ICoreWebView2WebResourceResponse
+	_, _, err = e.vtbl.CreateWebResourceResponse.Call(
+		uintptr(unsafe.Pointer(e)),
+		uintptr(stream),
+		uintptr(statusCode),
+		uintptr(unsafe.Pointer(_reason)),
+		uintptr(unsafe.Pointer(_headers)),
+		uintptr(unsafe.Pointer(&response)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return nil, err
+	}
+	return response, nil
+
 }
 
 // ICoreWebView2Controller
 
 type iCoreWebView2ControllerVtbl struct {
-	iUnknownVtbl
+	_IUnknownVtbl
 	GetIsVisible                      ComProc
 	PutIsVisible                      ComProc
 	GetBounds                         ComProc
@@ -236,7 +271,7 @@ type iCoreWebView2Controller struct {
 // ICoreWebView2WebMessageReceivedEventArgs
 
 type iCoreWebView2WebMessageReceivedEventArgsVtbl struct {
-	iUnknownVtbl
+	_IUnknownVtbl
 	GetSource                ComProc
 	GetWebMessageAsJSON      ComProc
 	TryGetWebMessageAsString ComProc
@@ -249,7 +284,7 @@ type iCoreWebView2WebMessageReceivedEventArgs struct {
 // ICoreWebView2PermissionRequestedEventArgs
 
 type iCoreWebView2PermissionRequestedEventArgsVtbl struct {
-	iUnknownVtbl
+	_IUnknownVtbl
 	GetURI             ComProc
 	GetPermissionKind  ComProc
 	GetIsUserInitiated ComProc
@@ -265,12 +300,12 @@ type iCoreWebView2PermissionRequestedEventArgs struct {
 // ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
 
 type iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerImpl interface {
-	iUnknownImpl
-	EnvironmentCompleted(res uintptr, env *iCoreWebView2Environment) uintptr
+	_IUnknownImpl
+	EnvironmentCompleted(res uintptr, env *ICoreWebView2Environment) uintptr
 }
 
 type iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerVtbl struct {
-	iUnknownVtbl
+	_IUnknownVtbl
 	Invoke ComProc
 }
 
@@ -291,12 +326,12 @@ func _ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerIUnknownRelease(
 	return this.impl.Release()
 }
 
-func _ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerInvoke(this *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler, res uintptr, env *iCoreWebView2Environment) uintptr {
+func _ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerInvoke(this *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler, res uintptr, env *ICoreWebView2Environment) uintptr {
 	return this.impl.EnvironmentCompleted(res, env)
 }
 
 var iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerFn = iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerVtbl{
-	iUnknownVtbl{
+	_IUnknownVtbl{
 		NewComProc(_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerIUnknownQueryInterface),
 		NewComProc(_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerIUnknownAddRef),
 		NewComProc(_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerIUnknownRelease),
@@ -314,12 +349,12 @@ func newICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler(impl iCoreWeb
 // ICoreWebView2CreateCoreWebView2ControllerCompletedHandler
 
 type iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerImpl interface {
-	iUnknownImpl
+	_IUnknownImpl
 	ControllerCompleted(res uintptr, controller *iCoreWebView2Controller) uintptr
 }
 
 type iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerVtbl struct {
-	iUnknownVtbl
+	_IUnknownVtbl
 	Invoke ComProc
 }
 
@@ -345,7 +380,7 @@ func _ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerInvoke(this *iCor
 }
 
 var iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerFn = iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerVtbl{
-	iUnknownVtbl{
+	_IUnknownVtbl{
 		NewComProc(_ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownQueryInterface),
 		NewComProc(_ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownAddRef),
 		NewComProc(_ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownRelease),
@@ -363,12 +398,12 @@ func newICoreWebView2CreateCoreWebView2ControllerCompletedHandler(impl iCoreWebV
 // ICoreWebView2WebMessageReceivedEventHandler
 
 type iCoreWebView2WebMessageReceivedEventHandlerImpl interface {
-	iUnknownImpl
-	MessageReceived(sender *iCoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr
+	_IUnknownImpl
+	MessageReceived(sender *ICoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr
 }
 
 type iCoreWebView2WebMessageReceivedEventHandlerVtbl struct {
-	iUnknownVtbl
+	_IUnknownVtbl
 	Invoke ComProc
 }
 
@@ -389,12 +424,12 @@ func _ICoreWebView2WebMessageReceivedEventHandlerIUnknownRelease(this *iCoreWebV
 	return this.impl.Release()
 }
 
-func _ICoreWebView2WebMessageReceivedEventHandlerInvoke(this *iCoreWebView2WebMessageReceivedEventHandler, sender *iCoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr {
+func _ICoreWebView2WebMessageReceivedEventHandlerInvoke(this *iCoreWebView2WebMessageReceivedEventHandler, sender *ICoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr {
 	return this.impl.MessageReceived(sender, args)
 }
 
 var iCoreWebView2WebMessageReceivedEventHandlerFn = iCoreWebView2WebMessageReceivedEventHandlerVtbl{
-	iUnknownVtbl{
+	_IUnknownVtbl{
 		NewComProc(_ICoreWebView2WebMessageReceivedEventHandlerIUnknownQueryInterface),
 		NewComProc(_ICoreWebView2WebMessageReceivedEventHandlerIUnknownAddRef),
 		NewComProc(_ICoreWebView2WebMessageReceivedEventHandlerIUnknownRelease),
@@ -412,12 +447,12 @@ func newICoreWebView2WebMessageReceivedEventHandler(impl iCoreWebView2WebMessage
 // ICoreWebView2PermissionRequestedEventHandler
 
 type iCoreWebView2PermissionRequestedEventHandlerImpl interface {
-	iUnknownImpl
-	PermissionRequested(sender *iCoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr
+	_IUnknownImpl
+	PermissionRequested(sender *ICoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr
 }
 
 type iCoreWebView2PermissionRequestedEventHandlerVtbl struct {
-	iUnknownVtbl
+	_IUnknownVtbl
 	Invoke ComProc
 }
 
@@ -438,12 +473,12 @@ func _ICoreWebView2PermissionRequestedEventHandlerIUnknownRelease(this *iCoreWeb
 	return this.impl.Release()
 }
 
-func _ICoreWebView2PermissionRequestedEventHandlerInvoke(this *iCoreWebView2PermissionRequestedEventHandler, sender *iCoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr {
+func _ICoreWebView2PermissionRequestedEventHandlerInvoke(this *iCoreWebView2PermissionRequestedEventHandler, sender *ICoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr {
 	return this.impl.PermissionRequested(sender, args)
 }
 
 var iCoreWebView2PermissionRequestedEventHandlerFn = iCoreWebView2PermissionRequestedEventHandlerVtbl{
-	iUnknownVtbl{
+	_IUnknownVtbl{
 		NewComProc(_ICoreWebView2PermissionRequestedEventHandlerIUnknownQueryInterface),
 		NewComProc(_ICoreWebView2PermissionRequestedEventHandlerIUnknownAddRef),
 		NewComProc(_ICoreWebView2PermissionRequestedEventHandlerIUnknownRelease),
@@ -456,4 +491,22 @@ func newICoreWebView2PermissionRequestedEventHandler(impl iCoreWebView2Permissio
 		vtbl: &iCoreWebView2PermissionRequestedEventHandlerFn,
 		impl: impl,
 	}
+}
+
+func (i *ICoreWebView2) AddWebResourceRequestedFilter(uri string, resourceContext COREWEBVIEW2_WEB_RESOURCE_CONTEXT) error {
+	var err error
+	// Convert string 'uri' to *uint16
+	_uri, err := windows.UTF16PtrFromString(uri)
+	if err != nil {
+		return err
+	}
+	_, _, err = i.vtbl.AddWebResourceRequestedFilter.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(_uri)),
+		uintptr(resourceContext),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
 }

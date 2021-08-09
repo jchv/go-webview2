@@ -14,6 +14,9 @@ var (
 	kernel32                   = windows.NewLazySystemDLL("kernel32")
 	Kernel32GetCurrentThreadID = kernel32.NewProc("GetCurrentThreadId")
 
+	shlwapi                  = windows.NewLazySystemDLL("shlwapi")
+	shlwapiSHCreateMemStream = shlwapi.NewProc("SHCreateMemStream")
+
 	user32                   = windows.NewLazySystemDLL("user32")
 	User32LoadImageW         = user32.NewProc("LoadImageW")
 	User32GetSystemMetrics   = user32.NewProc("GetSystemMetrics")
@@ -133,4 +136,16 @@ func Utf16PtrToString(p *uint16) string {
 	}
 	s := (*[(1 << 30) - 1]uint16)(unsafe.Pointer(p))[:n:n]
 	return string(utf16.Decode(s))
+}
+
+func SHCreateMemStream(data []byte) (uintptr, error) {
+	ret, _, err := shlwapiSHCreateMemStream.Call(
+		uintptr(unsafe.Pointer(&data[0])),
+		uintptr(len(data)),
+	)
+	if ret == 0 {
+		return 0, err
+	}
+
+	return ret, nil
 }
