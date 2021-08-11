@@ -98,9 +98,15 @@ func (e *Chromium) Init(script string) {
 }
 
 func (e *Chromium) Eval(script string) {
+
+	_script, err := windows.UTF16PtrFromString(script)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	e.webview.vtbl.ExecuteScript.Call(
 		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(script))),
+		uintptr(unsafe.Pointer(_script)),
 		0,
 	)
 }
