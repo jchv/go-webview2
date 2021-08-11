@@ -13,16 +13,18 @@ import (
 )
 
 type Chromium struct {
-	hwnd                 uintptr
-	controller           *iCoreWebView2Controller
-	webview              *ICoreWebView2
-	inited               uintptr
-	envCompleted         *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
-	controllerCompleted  *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler
-	webMessageReceived   *iCoreWebView2WebMessageReceivedEventHandler
-	permissionRequested  *iCoreWebView2PermissionRequestedEventHandler
-	webResourceRequested *iCoreWebView2WebResourceRequestedEventHandler
-	environment          *ICoreWebView2Environment
+	hwnd                  uintptr
+	controller            *iCoreWebView2Controller
+	webview               *ICoreWebView2
+	inited                uintptr
+	envCompleted          *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
+	controllerCompleted   *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler
+	webMessageReceived    *iCoreWebView2WebMessageReceivedEventHandler
+	permissionRequested   *iCoreWebView2PermissionRequestedEventHandler
+	webResourceRequested  *iCoreWebView2WebResourceRequestedEventHandler
+	acceleratorKeyPressed *ICoreWebView2AcceleratorKeyPressedEventHandler
+
+	environment *ICoreWebView2Environment
 
 	// Settings
 	Debug bool
@@ -30,6 +32,7 @@ type Chromium struct {
 	// Callbacks
 	MessageCallback              func(string)
 	WebResourceRequestedCallback func(request *ICoreWebView2WebResourceRequest, args *ICoreWebView2WebResourceRequestedEventArgs)
+	AcceleratorKeyCallback       func(uint)
 }
 
 func NewChromium() *Chromium {
@@ -39,6 +42,7 @@ func NewChromium() *Chromium {
 	e.webMessageReceived = newICoreWebView2WebMessageReceivedEventHandler(e)
 	e.permissionRequested = newICoreWebView2PermissionRequestedEventHandler(e)
 	e.webResourceRequested = newICoreWebView2WebResourceRequestedEventHandler(e)
+	e.acceleratorKeyPressed = newICoreWebView2AcceleratorKeyPressedEventHandler(e)
 
 	return e
 }
@@ -136,7 +140,7 @@ func (e *Chromium) EnvironmentCompleted(res uintptr, env *ICoreWebView2Environme
 	return 0
 }
 
-func (e *Chromium) ControllerCompleted(res uintptr, controller *iCoreWebView2Controller) uintptr {
+func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller *iCoreWebView2Controller) uintptr {
 	if int64(res) < 0 {
 		log.Fatalf("Creating controller failed with %08x", res)
 	}
@@ -166,6 +170,9 @@ func (e *Chromium) ControllerCompleted(res uintptr, controller *iCoreWebView2Con
 		uintptr(unsafe.Pointer(e.webResourceRequested)),
 		uintptr(unsafe.Pointer(&token)),
 	)
+
+	e.controller.AddAcceleratorKeyPressed(e.acceleratorKeyPressed, &token)
+
 	atomic.StoreUintptr(&e.inited, 1)
 
 	return 0
@@ -223,4 +230,24 @@ func (e *Chromium) AddWebResourceRequestedFilter(filter string, ctx COREWEBVIEW2
 
 func (e *Chromium) Environment() *ICoreWebView2Environment {
 	return e.environment
+}
+
+// AcceleratorKeyPressed is called when an accelerator key is pressed.
+// If the AcceleratorKeyCallback method has been set, it will defer handling of the keypress
+// to the callback. Doing this will prevent all the default actions such as "Print" (Ctrl-P).
+func (e *Chromium) AcceleratorKeyPressed(sender *iCoreWebView2Controller, args *ICoreWebView2AcceleratorKeyPressedEventArgs) uintptr {
+	if e.AcceleratorKeyCallback == nil {
+		return 0
+	}
+	args.PutHandled(true)
+	eventKind, _ := args.GetKeyEventKind()
+	if eventKind == COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN ||
+		eventKind == COREWEBVIEW2_KEY_EVENT_KIND_SYSTEM_KEY_DOWN {
+		virtualKey, _ := args.GetVirtualKey()
+		status, _ := args.GetPhysicalKeyStatus()
+		if !status.WasKeyDown {
+			e.AcceleratorKeyCallback(virtualKey)
+		}
+	}
+	return 0
 }

@@ -235,39 +235,6 @@ func (e *ICoreWebView2Environment) CreateWebResourceResponse(content []byte, sta
 
 }
 
-// ICoreWebView2Controller
-
-type iCoreWebView2ControllerVtbl struct {
-	_IUnknownVtbl
-	GetIsVisible                      ComProc
-	PutIsVisible                      ComProc
-	GetBounds                         ComProc
-	PutBounds                         ComProc
-	GetZoomFactor                     ComProc
-	PutZoomFactor                     ComProc
-	AddZoomFactorChanged              ComProc
-	RemoveZoomFactorChanged           ComProc
-	SetBoundsAndZoomFactor            ComProc
-	MoveFocus                         ComProc
-	AddMoveFocusRequested             ComProc
-	RemoveMoveFocusRequested          ComProc
-	AddGotFocus                       ComProc
-	RemoveGotFocus                    ComProc
-	AddLostFocus                      ComProc
-	RemoveLostFocus                   ComProc
-	AddAcceleratorKeyPressed          ComProc
-	RemoveAcceleratorKeyPressed       ComProc
-	GetParentWindow                   ComProc
-	PutParentWindow                   ComProc
-	NotifyParentWindowPositionChanged ComProc
-	Close                             ComProc
-	GetCoreWebView2                   ComProc
-}
-
-type iCoreWebView2Controller struct {
-	vtbl *iCoreWebView2ControllerVtbl
-}
-
 // ICoreWebView2WebMessageReceivedEventArgs
 
 type iCoreWebView2WebMessageReceivedEventArgsVtbl struct {
@@ -342,55 +309,6 @@ var iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerFn = iCoreWebView2
 func newICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler(impl iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerImpl) *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler {
 	return &iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler{
 		vtbl: &iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerFn,
-		impl: impl,
-	}
-}
-
-// ICoreWebView2CreateCoreWebView2ControllerCompletedHandler
-
-type iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerImpl interface {
-	_IUnknownImpl
-	ControllerCompleted(res uintptr, controller *iCoreWebView2Controller) uintptr
-}
-
-type iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerVtbl struct {
-	_IUnknownVtbl
-	Invoke ComProc
-}
-
-type iCoreWebView2CreateCoreWebView2ControllerCompletedHandler struct {
-	vtbl *iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerVtbl
-	impl iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerImpl
-}
-
-func _ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownQueryInterface(this *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler, refiid, object uintptr) uintptr {
-	return this.impl.QueryInterface(refiid, object)
-}
-
-func _ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownAddRef(this *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler) uintptr {
-	return this.impl.AddRef()
-}
-
-func _ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownRelease(this *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler) uintptr {
-	return this.impl.Release()
-}
-
-func _ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerInvoke(this *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler, res uintptr, controller *iCoreWebView2Controller) uintptr {
-	return this.impl.ControllerCompleted(res, controller)
-}
-
-var iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerFn = iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerVtbl{
-	_IUnknownVtbl{
-		NewComProc(_ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownQueryInterface),
-		NewComProc(_ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownAddRef),
-		NewComProc(_ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownRelease),
-	},
-	NewComProc(_ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerInvoke),
-}
-
-func newICoreWebView2CreateCoreWebView2ControllerCompletedHandler(impl iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerImpl) *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler {
-	return &iCoreWebView2CreateCoreWebView2ControllerCompletedHandler{
-		vtbl: &iCoreWebView2CreateCoreWebView2ControllerCompletedHandlerFn,
 		impl: impl,
 	}
 }
