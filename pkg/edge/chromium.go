@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package edge
@@ -248,6 +249,17 @@ func (e *Chromium) AcceleratorKeyPressed(sender *iCoreWebView2Controller, args *
 		if !status.WasKeyDown {
 			e.AcceleratorKeyCallback(virtualKey)
 		}
+	}
+	return 0
+}
+
+func (e *Chromium) GetSettings() (*ICoreWebView2Settings, error) {
+	return e.webview.GetSettings()
+}
+
+func boolToInt(input bool) int {
+	if input {
+		return 1
 	}
 	return 0
 }

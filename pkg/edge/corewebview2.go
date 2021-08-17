@@ -185,6 +185,19 @@ type ICoreWebView2 struct {
 	vtbl *iCoreWebView2Vtbl
 }
 
+func (i *ICoreWebView2) GetSettings() (*ICoreWebView2Settings, error) {
+	var err error
+	var settings *ICoreWebView2Settings
+	_, _, err = i.vtbl.GetSettings.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&settings)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return nil, err
+	}
+	return settings, nil
+}
+
 // ICoreWebView2Environment
 
 type iCoreWebView2EnvironmentVtbl struct {
