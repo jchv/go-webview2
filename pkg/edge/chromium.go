@@ -257,6 +257,10 @@ func (e *Chromium) GetSettings() (*ICoreWebView2Settings, error) {
 	return e.webview.GetSettings()
 }
 
+func (e *Chromium) GetWebView2Controller2() (*ICoreWebView2Controller2, error) {
+	return e.webview.GetWebView2Controller2()
+}
+
 func boolToInt(input bool) int {
 	if input {
 		return 1
