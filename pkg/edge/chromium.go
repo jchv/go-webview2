@@ -24,6 +24,7 @@ type Chromium struct {
 	permissionRequested   *iCoreWebView2PermissionRequestedEventHandler
 	webResourceRequested  *iCoreWebView2WebResourceRequestedEventHandler
 	acceleratorKeyPressed *ICoreWebView2AcceleratorKeyPressedEventHandler
+	navigationCompleted   *ICoreWebView2NavigationCompletedEventHandler
 
 	environment *ICoreWebView2Environment
 
@@ -33,6 +34,7 @@ type Chromium struct {
 	// Callbacks
 	MessageCallback              func(string)
 	WebResourceRequestedCallback func(request *ICoreWebView2WebResourceRequest, args *ICoreWebView2WebResourceRequestedEventArgs)
+	NavigationCompletedCallback  func(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs)
 	AcceleratorKeyCallback       func(uint)
 }
 
@@ -44,6 +46,7 @@ func NewChromium() *Chromium {
 	e.permissionRequested = newICoreWebView2PermissionRequestedEventHandler(e)
 	e.webResourceRequested = newICoreWebView2WebResourceRequestedEventHandler(e)
 	e.acceleratorKeyPressed = newICoreWebView2AcceleratorKeyPressedEventHandler(e)
+	e.navigationCompleted = newICoreWebView2NavigationCompletedEventHandler(e)
 
 	return e
 }
@@ -171,6 +174,11 @@ func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller
 		uintptr(unsafe.Pointer(e.webResourceRequested)),
 		uintptr(unsafe.Pointer(&token)),
 	)
+	e.webview.vtbl.AddNavigationCompleted.Call(
+		uintptr(unsafe.Pointer(e.webview)),
+		uintptr(unsafe.Pointer(e.navigationCompleted)),
+		uintptr(unsafe.Pointer(&token)),
+	)
 
 	e.controller.AddAcceleratorKeyPressed(e.acceleratorKeyPressed, &token)
 
@@ -264,6 +272,13 @@ func (e *Chromium) GetWebView2Controller2() (*ICoreWebView2Controller2, error) {
 func boolToInt(input bool) int {
 	if input {
 		return 1
+	}
+	return 0
+}
+
+func (e *Chromium) NavigationCompleted(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs) uintptr {
+	if e.NavigationCompletedCallback != nil {
+		e.NavigationCompletedCallback(sender, args)
 	}
 	return 0
 }
