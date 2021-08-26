@@ -441,3 +441,15 @@ func (i *ICoreWebView2) AddWebResourceRequestedFilter(uri string, resourceContex
 	}
 	return nil
 }
+func (i *ICoreWebView2) AddNavigationCompleted(eventHandler *ICoreWebView2NavigationCompletedEventHandler, token *_EventRegistrationToken) error {
+	var err error
+	_, _, err = i.vtbl.AddNavigationCompleted.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(eventHandler)),
+		uintptr(unsafe.Pointer(&token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
