@@ -1,10 +1,8 @@
-//go:build windows
 // +build windows
 
 package edge
 
 import (
-	"github.com/go-ole/go-ole"
 	"github.com/jchv/go-webview2/internal/w32"
 	"log"
 	"runtime"
@@ -187,14 +185,6 @@ type ICoreWebView2 struct {
 	vtbl *iCoreWebView2Vtbl
 }
 
-func (i *ICoreWebView2) QueryInterface(refiid, object uintptr) (uintptr, error) {
-	result, _, err := i.vtbl.QueryInterface.Call(refiid, object)
-	if err != windows.ERROR_SUCCESS {
-		return result, err
-	}
-	return result, nil
-}
-
 func (i *ICoreWebView2) GetSettings() (*ICoreWebView2Settings, error) {
 	var err error
 	var settings *ICoreWebView2Settings
@@ -206,20 +196,6 @@ func (i *ICoreWebView2) GetSettings() (*ICoreWebView2Settings, error) {
 		return nil, err
 	}
 	return settings, nil
-}
-
-func (i *ICoreWebView2) GetWebView2Controller2() (*ICoreWebView2Controller2, error) {
-
-	var result *ICoreWebView2Controller2
-	IID_ICoreWebView2Controller2 := ole.NewGUID("{c979903e-d4ca-4228-92eb-47ee3fa96eab}")
-	queryInterface, err := i.QueryInterface(
-		uintptr(unsafe.Pointer(&IID_ICoreWebView2Controller2)),
-		uintptr(unsafe.Pointer(&result)),
-	)
-	if err != windows.ERROR_SUCCESS {
-		return nil, err
-	}
-	return (*ICoreWebView2Controller2)(unsafe.Pointer(queryInterface)), nil
 }
 
 // ICoreWebView2Environment
