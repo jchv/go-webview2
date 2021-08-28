@@ -42,8 +42,8 @@ func CompareBrowserVersions(v1 string, v2 string) (int, error) {
 
 	var result int
 	if nativeErr != nil {
-		loadFromMemory()
-		if memErr != nil {
+		err := loadFromMemory(nativeErr)
+		if err != nil {
 			return 0, fmt.Errorf("Unable to load WebView2Loader.dll from disk: %v -- or from memory: %w", nativeErr, memErr)
 		}
 		_, _, err = memCompareBrowserVersions.Call(
@@ -70,9 +70,9 @@ func CreateCoreWebView2EnvironmentWithOptions(browserExecutableFolder, userDataF
 		nativeErr = nativeCreate.Find()
 	}
 	if nativeErr != nil {
-		loadFromMemory()
-		if memErr != nil {
-			return 0, fmt.Errorf("Unable to load WebView2Loader.dll from disk: %v -- or from memory: %w", nativeErr, memErr)
+		err := loadFromMemory(nativeErr)
+		if err != nil {
+			return 0, err
 		}
 		res, _, _ := memCreate.Call(
 			uint64(uintptr(unsafe.Pointer(browserExecutableFolder))),
@@ -91,13 +91,17 @@ func CreateCoreWebView2EnvironmentWithOptions(browserExecutableFolder, userDataF
 	return res, nil
 }
 
-func loadFromMemory() {
+func loadFromMemory(nativeErr error) error {
+	var err error
 	// DLL is not available natively. Try loading embedded copy.
 	memOnce.Do(func() {
 		memModule, memErr = winloader.LoadFromMemory(WebView2Loader)
-		if memErr == nil {
-			memCreate = memModule.Proc("CreateCoreWebView2EnvironmentWithOptions")
-			memCompareBrowserVersions = memModule.Proc("CompareBrowserVersions")
+		if memErr != nil {
+			err = fmt.Errorf("Unable to load WebView2Loader.dll from disk: %v -- or from memory: %w", nativeErr, memErr)
+			return
 		}
+		memCreate = memModule.Proc("CreateCoreWebView2EnvironmentWithOptions")
+		memCompareBrowserVersions = memModule.Proc("CompareBrowserVersions")
 	})
+	return err
 }

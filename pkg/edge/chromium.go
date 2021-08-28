@@ -119,6 +119,14 @@ func (e *Chromium) Eval(script string) {
 	)
 }
 
+func (e *Chromium) Show() error {
+	return e.controller.PutIsVisible(true)
+}
+
+func (e *Chromium) Hide() error {
+	return e.controller.PutIsVisible(false)
+}
+
 func (e *Chromium) QueryInterface(_, _ uintptr) uintptr {
 	return 0
 }

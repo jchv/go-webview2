@@ -74,32 +74,3 @@ func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) PutHandled(handled bool) e
 	}
 	return nil
 }
-
-/*
-func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) GetHandled() (bool, error) {
-	var err error
-	var handled bool
-	_, _, err = i.vtbl.GetHandled.Call(
-		uintptr(unsafe.Pointer(i)),
-		uintptr(unsafe.Pointer(&handled)),
-	)
-	if err != windows.ERROR_SUCCESS {
-		return false, err
-	}
-	return handled, nil
-}
-
-func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) GetKeyEventLParam() (int, error) {
-	var err error
-	var lParam int
-	_, _, err = i.vtbl.GetKeyEventLParam.Call(
-		uintptr(unsafe.Pointer(i)),
-		uintptr(unsafe.Pointer(&lParam)),
-	)
-	if err != windows.ERROR_SUCCESS {
-		return 0, err
-	}
-	return lParam, nil
-}
-
-*/
