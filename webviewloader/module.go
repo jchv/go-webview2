@@ -26,10 +26,6 @@ var (
 //   0 = v1 == v2
 //   1 = v1 > v2
 func CompareBrowserVersions(v1 string, v2 string) (int, error) {
-	nativeErr := nativeModule.Load()
-	if nativeErr == nil {
-		nativeErr = nativeCompareBrowserVersions.Find()
-	}
 
 	_v1, err := windows.UTF16PtrFromString(v1)
 	if err != nil {
@@ -40,6 +36,10 @@ func CompareBrowserVersions(v1 string, v2 string) (int, error) {
 		return 0, err
 	}
 
+	nativeErr := nativeModule.Load()
+	if nativeErr == nil {
+		nativeErr = nativeCompareBrowserVersions.Find()
+	}
 	var result int
 	if nativeErr != nil {
 		err := loadFromMemory(nativeErr)
