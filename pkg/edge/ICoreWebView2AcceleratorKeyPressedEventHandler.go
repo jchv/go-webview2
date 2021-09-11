@@ -25,13 +25,13 @@ func _ICoreWebView2AcceleratorKeyPressedEventHandlerIUnknownRelease(this *ICoreW
 	return this.impl.Release()
 }
 
-func _ICoreWebView2AcceleratorKeyPressedEventHandlerInvoke(this *ICoreWebView2AcceleratorKeyPressedEventHandler, sender *iCoreWebView2Controller, args *ICoreWebView2AcceleratorKeyPressedEventArgs) uintptr {
+func _ICoreWebView2AcceleratorKeyPressedEventHandlerInvoke(this *ICoreWebView2AcceleratorKeyPressedEventHandler, sender *ICoreWebView2Controller, args *ICoreWebView2AcceleratorKeyPressedEventArgs) uintptr {
 	return this.impl.AcceleratorKeyPressed(sender, args)
 }
 
 type _ICoreWebView2AcceleratorKeyPressedEventHandlerImpl interface {
 	_IUnknownImpl
-	AcceleratorKeyPressed(sender *iCoreWebView2Controller, args *ICoreWebView2AcceleratorKeyPressedEventArgs) uintptr
+	AcceleratorKeyPressed(sender *ICoreWebView2Controller, args *ICoreWebView2AcceleratorKeyPressedEventArgs) uintptr
 }
 
 var _ICoreWebView2AcceleratorKeyPressedEventHandlerFn = _ICoreWebView2AcceleratorKeyPressedEventHandlerVtbl{

@@ -15,7 +15,7 @@ import (
 
 type Chromium struct {
 	hwnd                  uintptr
-	controller            *iCoreWebView2Controller
+	controller            *ICoreWebView2Controller
 	webview               *ICoreWebView2
 	inited                uintptr
 	envCompleted          *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
@@ -152,7 +152,7 @@ func (e *Chromium) EnvironmentCompleted(res uintptr, env *ICoreWebView2Environme
 	return 0
 }
 
-func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller *iCoreWebView2Controller) uintptr {
+func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller *ICoreWebView2Controller) uintptr {
 	if int64(res) < 0 {
 		log.Fatalf("Creating controller failed with %08x", res)
 	}
@@ -252,7 +252,7 @@ func (e *Chromium) Environment() *ICoreWebView2Environment {
 // AcceleratorKeyPressed is called when an accelerator key is pressed.
 // If the AcceleratorKeyCallback method has been set, it will defer handling of the keypress
 // to the callback. Doing this will prevent all the default actions such as "Print" (Ctrl-P).
-func (e *Chromium) AcceleratorKeyPressed(sender *iCoreWebView2Controller, args *ICoreWebView2AcceleratorKeyPressedEventArgs) uintptr {
+func (e *Chromium) AcceleratorKeyPressed(sender *ICoreWebView2Controller, args *ICoreWebView2AcceleratorKeyPressedEventArgs) uintptr {
 	if e.AcceleratorKeyCallback == nil {
 		return 0
 	}
@@ -271,6 +271,10 @@ func (e *Chromium) AcceleratorKeyPressed(sender *iCoreWebView2Controller, args *
 
 func (e *Chromium) GetSettings() (*ICoreWebView2Settings, error) {
 	return e.webview.GetSettings()
+}
+
+func (e *Chromium) GetController() *ICoreWebView2Controller {
+	return e.controller
 }
 
 func boolToInt(input bool) int {
