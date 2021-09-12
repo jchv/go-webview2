@@ -4,13 +4,13 @@
 package edge
 
 import (
-	"github.com/leaanthony/go-webview2/internal/w32"
+	"go-webview2/internal/w32"
 	"log"
 	"runtime"
 	"syscall"
 	"unsafe"
 
-	"github.com/leaanthony/go-webview2/webviewloader"
+	"go-webview2/webviewloader"
 	"golang.org/x/sys/windows"
 )
 
