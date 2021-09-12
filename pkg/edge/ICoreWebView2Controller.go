@@ -33,15 +33,15 @@ type _ICoreWebView2ControllerVtbl struct {
 	GetCoreWebView2                   ComProc
 }
 
-type iCoreWebView2Controller struct {
+type ICoreWebView2Controller struct {
 	vtbl *_ICoreWebView2ControllerVtbl
 }
 
-func (i *iCoreWebView2Controller) AddRef() uintptr {
+func (i *ICoreWebView2Controller) AddRef() uintptr {
 	return i.AddRef()
 }
 
-func (i *iCoreWebView2Controller) GetBounds() (*w32.Rect, error) {
+func (i *ICoreWebView2Controller) GetBounds() (*w32.Rect, error) {
 	var err error
 	var bounds *w32.Rect
 	_, _, err = i.vtbl.GetBounds.Call(
@@ -54,7 +54,7 @@ func (i *iCoreWebView2Controller) GetBounds() (*w32.Rect, error) {
 	return bounds, nil
 }
 
-func (i *iCoreWebView2Controller) PutBounds(bounds w32.Rect) error {
+func (i *ICoreWebView2Controller) PutBounds(bounds w32.Rect) error {
 	var err error
 
 	_, _, err = i.vtbl.PutBounds.Call(
@@ -67,7 +67,7 @@ func (i *iCoreWebView2Controller) PutBounds(bounds w32.Rect) error {
 	return nil
 }
 
-func (i *iCoreWebView2Controller) AddAcceleratorKeyPressed(eventHandler *ICoreWebView2AcceleratorKeyPressedEventHandler, token *_EventRegistrationToken) error {
+func (i *ICoreWebView2Controller) AddAcceleratorKeyPressed(eventHandler *ICoreWebView2AcceleratorKeyPressedEventHandler, token *_EventRegistrationToken) error {
 	var err error
 	_, _, err = i.vtbl.AddAcceleratorKeyPressed.Call(
 		uintptr(unsafe.Pointer(i)),
@@ -80,7 +80,7 @@ func (i *iCoreWebView2Controller) AddAcceleratorKeyPressed(eventHandler *ICoreWe
 	return nil
 }
 
-func (i *iCoreWebView2Controller) PutIsVisible(isVisible bool) error {
+func (i *ICoreWebView2Controller) PutIsVisible(isVisible bool) error {
 	var err error
 
 	_, _, err = i.vtbl.PutIsVisible.Call(
@@ -91,4 +91,17 @@ func (i *iCoreWebView2Controller) PutIsVisible(isVisible bool) error {
 		return err
 	}
 	return nil
+}
+
+func (i *ICoreWebView2Controller) GetICoreWebView2Controller2() *ICoreWebView2Controller2 {
+
+	var result *ICoreWebView2Controller2
+
+	iidICoreWebView2Controller2 := NewGUID("{c979903e-d4ca-4228-92eb-47ee3fa96eab}")
+	i.vtbl.QueryInterface.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(iidICoreWebView2Controller2)),
+		uintptr(unsafe.Pointer(&result)))
+
+	return result
 }
