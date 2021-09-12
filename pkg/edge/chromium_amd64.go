@@ -4,7 +4,7 @@
 package edge
 
 import (
-	"github.com/jchv/go-webview2/internal/w32"
+	"github.com/leaanthony/go-webview2/internal/w32"
 	"unsafe"
 )
 
