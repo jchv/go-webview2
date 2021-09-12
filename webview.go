@@ -6,8 +6,8 @@ package webview2
 import (
 	"encoding/json"
 	"errors"
-	"go-webview2/internal/w32"
-	"go-webview2/pkg/edge"
+	"github.com/jchv/go-webview2/internal/w32"
+	"github.com/jchv/go-webview2/pkg/edge"
 	"log"
 	"reflect"
 	"strconv"

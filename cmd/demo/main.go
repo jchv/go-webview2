@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"go-webview2"
+	"github.com/jchv/go-webview2"
 )
 
 func main() {
