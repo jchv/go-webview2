@@ -1,7 +1,7 @@
 package edge
 
 import (
-	"go-webview2/internal/w32"
+	"github.com/leaanthony/go-webview2/internal/w32"
 	"golang.org/x/sys/windows"
 	"unsafe"
 )

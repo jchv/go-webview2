@@ -4,7 +4,7 @@
 package edge
 
 import (
-	"go-webview2/internal/w32"
+	"github.com/leaanthony/go-webview2/internal/w32"
 	"golang.org/x/sys/windows"
 	"log"
 	"os"
@@ -35,7 +35,7 @@ type Chromium struct {
 	MessageCallback              func(string)
 	WebResourceRequestedCallback func(request *ICoreWebView2WebResourceRequest, args *ICoreWebView2WebResourceRequestedEventArgs)
 	NavigationCompletedCallback  func(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs)
-	AcceleratorKeyCallback       func(uint)
+	AcceleratorKeyCallback       func(uint) bool
 }
 
 func NewChromium() *Chromium {
@@ -251,21 +251,22 @@ func (e *Chromium) Environment() *ICoreWebView2Environment {
 
 // AcceleratorKeyPressed is called when an accelerator key is pressed.
 // If the AcceleratorKeyCallback method has been set, it will defer handling of the keypress
-// to the callback. Doing this will prevent all the default actions such as "Print" (Ctrl-P).
+// to the callback. That callback returns a bool indicating if the event was handled.
 func (e *Chromium) AcceleratorKeyPressed(sender *ICoreWebView2Controller, args *ICoreWebView2AcceleratorKeyPressedEventArgs) uintptr {
 	if e.AcceleratorKeyCallback == nil {
 		return 0
 	}
-	args.PutHandled(true)
 	eventKind, _ := args.GetKeyEventKind()
 	if eventKind == COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN ||
 		eventKind == COREWEBVIEW2_KEY_EVENT_KIND_SYSTEM_KEY_DOWN {
 		virtualKey, _ := args.GetVirtualKey()
 		status, _ := args.GetPhysicalKeyStatus()
 		if !status.WasKeyDown {
-			e.AcceleratorKeyCallback(virtualKey)
+			args.PutHandled(e.AcceleratorKeyCallback(virtualKey))
+			return 0
 		}
 	}
+	args.PutHandled(false)
 	return 0
 }
 

@@ -67,7 +67,7 @@ func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) PutHandled(handled bool) e
 
 	_, _, err = i.vtbl.PutHandled.Call(
 		uintptr(unsafe.Pointer(i)),
-		uintptr(unsafe.Pointer(&handled)),
+		uintptr(boolToInt(handled)),
 	)
 	if err != windows.ERROR_SUCCESS {
 		return err
