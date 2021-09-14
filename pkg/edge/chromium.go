@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package edge
@@ -13,20 +14,28 @@ import (
 )
 
 type Chromium struct {
-	hwnd                uintptr
-	controller          *iCoreWebView2Controller
-	webview             *iCoreWebView2
-	inited              uintptr
-	envCompleted        *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
-	controllerCompleted *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler
-	webMessageReceived  *iCoreWebView2WebMessageReceivedEventHandler
-	permissionRequested *iCoreWebView2PermissionRequestedEventHandler
+	hwnd                  uintptr
+	controller            *ICoreWebView2Controller
+	webview               *ICoreWebView2
+	inited                uintptr
+	envCompleted          *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
+	controllerCompleted   *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler
+	webMessageReceived    *iCoreWebView2WebMessageReceivedEventHandler
+	permissionRequested   *iCoreWebView2PermissionRequestedEventHandler
+	webResourceRequested  *iCoreWebView2WebResourceRequestedEventHandler
+	acceleratorKeyPressed *ICoreWebView2AcceleratorKeyPressedEventHandler
+	navigationCompleted   *ICoreWebView2NavigationCompletedEventHandler
+
+	environment *ICoreWebView2Environment
 
 	// Settings
 	Debug bool
 
 	// Callbacks
-	MessageCallback func(string)
+	MessageCallback              func(string)
+	WebResourceRequestedCallback func(request *ICoreWebView2WebResourceRequest, args *ICoreWebView2WebResourceRequestedEventArgs)
+	NavigationCompletedCallback  func(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs)
+	AcceleratorKeyCallback       func(uint) bool
 }
 
 func NewChromium() *Chromium {
@@ -35,6 +44,9 @@ func NewChromium() *Chromium {
 	e.controllerCompleted = newICoreWebView2CreateCoreWebView2ControllerCompletedHandler(e)
 	e.webMessageReceived = newICoreWebView2WebMessageReceivedEventHandler(e)
 	e.permissionRequested = newICoreWebView2PermissionRequestedEventHandler(e)
+	e.webResourceRequested = newICoreWebView2WebResourceRequestedEventHandler(e)
+	e.acceleratorKeyPressed = newICoreWebView2AcceleratorKeyPressedEventHandler(e)
+	e.navigationCompleted = newICoreWebView2NavigationCompletedEventHandler(e)
 
 	return e
 }
@@ -94,11 +106,25 @@ func (e *Chromium) Init(script string) {
 }
 
 func (e *Chromium) Eval(script string) {
+
+	_script, err := windows.UTF16PtrFromString(script)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	e.webview.vtbl.ExecuteScript.Call(
 		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(script))),
+		uintptr(unsafe.Pointer(_script)),
 		0,
 	)
+}
+
+func (e *Chromium) Show() error {
+	return e.controller.PutIsVisible(true)
+}
+
+func (e *Chromium) Hide() error {
+	return e.controller.PutIsVisible(false)
 }
 
 func (e *Chromium) QueryInterface(_, _ uintptr) uintptr {
@@ -113,10 +139,11 @@ func (e *Chromium) Release() uintptr {
 	return 1
 }
 
-func (e *Chromium) EnvironmentCompleted(res uintptr, env *iCoreWebView2Environment) uintptr {
+func (e *Chromium) EnvironmentCompleted(res uintptr, env *ICoreWebView2Environment) uintptr {
 	if int64(res) < 0 {
 		log.Fatalf("Creating environment failed with %08x", res)
 	}
+	e.environment = env
 	env.vtbl.CreateCoreWebView2Controller.Call(
 		uintptr(unsafe.Pointer(env)),
 		e.hwnd,
@@ -125,7 +152,7 @@ func (e *Chromium) EnvironmentCompleted(res uintptr, env *iCoreWebView2Environme
 	return 0
 }
 
-func (e *Chromium) ControllerCompleted(res uintptr, controller *iCoreWebView2Controller) uintptr {
+func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller *ICoreWebView2Controller) uintptr {
 	if int64(res) < 0 {
 		log.Fatalf("Creating controller failed with %08x", res)
 	}
@@ -150,13 +177,25 @@ func (e *Chromium) ControllerCompleted(res uintptr, controller *iCoreWebView2Con
 		uintptr(unsafe.Pointer(e.permissionRequested)),
 		uintptr(unsafe.Pointer(&token)),
 	)
+	e.webview.vtbl.AddWebResourceRequested.Call(
+		uintptr(unsafe.Pointer(e.webview)),
+		uintptr(unsafe.Pointer(e.webResourceRequested)),
+		uintptr(unsafe.Pointer(&token)),
+	)
+	e.webview.vtbl.AddNavigationCompleted.Call(
+		uintptr(unsafe.Pointer(e.webview)),
+		uintptr(unsafe.Pointer(e.navigationCompleted)),
+		uintptr(unsafe.Pointer(&token)),
+	)
+
+	e.controller.AddAcceleratorKeyPressed(e.acceleratorKeyPressed, &token)
 
 	atomic.StoreUintptr(&e.inited, 1)
 
 	return 0
 }
 
-func (e *Chromium) MessageReceived(sender *iCoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr {
+func (e *Chromium) MessageReceived(sender *ICoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr {
 	var message *uint16
 	args.vtbl.TryGetWebMessageAsString.Call(
 		uintptr(unsafe.Pointer(args)),
@@ -173,7 +212,7 @@ func (e *Chromium) MessageReceived(sender *iCoreWebView2, args *iCoreWebView2Web
 	return 0
 }
 
-func (e *Chromium) PermissionRequested(_ *iCoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr {
+func (e *Chromium) PermissionRequested(_ *ICoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr {
 	var kind _CoreWebView2PermissionKind
 	args.vtbl.GetPermissionKind.Call(
 		uintptr(unsafe.Pointer(args)),
@@ -184,6 +223,71 @@ func (e *Chromium) PermissionRequested(_ *iCoreWebView2, args *iCoreWebView2Perm
 			uintptr(unsafe.Pointer(args)),
 			uintptr(_CoreWebView2PermissionStateAllow),
 		)
+	}
+	return 0
+}
+
+func (e *Chromium) WebResourceRequested(sender *ICoreWebView2, args *ICoreWebView2WebResourceRequestedEventArgs) uintptr {
+	req, err := args.GetRequest()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if e.WebResourceRequestedCallback != nil {
+		e.WebResourceRequestedCallback(req, args)
+	}
+	return 0
+}
+
+func (e *Chromium) AddWebResourceRequestedFilter(filter string, ctx COREWEBVIEW2_WEB_RESOURCE_CONTEXT) {
+	err := e.webview.AddWebResourceRequestedFilter(filter, ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (e *Chromium) Environment() *ICoreWebView2Environment {
+	return e.environment
+}
+
+// AcceleratorKeyPressed is called when an accelerator key is pressed.
+// If the AcceleratorKeyCallback method has been set, it will defer handling of the keypress
+// to the callback. That callback returns a bool indicating if the event was handled.
+func (e *Chromium) AcceleratorKeyPressed(sender *ICoreWebView2Controller, args *ICoreWebView2AcceleratorKeyPressedEventArgs) uintptr {
+	if e.AcceleratorKeyCallback == nil {
+		return 0
+	}
+	eventKind, _ := args.GetKeyEventKind()
+	if eventKind == COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN ||
+		eventKind == COREWEBVIEW2_KEY_EVENT_KIND_SYSTEM_KEY_DOWN {
+		virtualKey, _ := args.GetVirtualKey()
+		status, _ := args.GetPhysicalKeyStatus()
+		if !status.WasKeyDown {
+			args.PutHandled(e.AcceleratorKeyCallback(virtualKey))
+			return 0
+		}
+	}
+	args.PutHandled(false)
+	return 0
+}
+
+func (e *Chromium) GetSettings() (*ICoreWebView2Settings, error) {
+	return e.webview.GetSettings()
+}
+
+func (e *Chromium) GetController() *ICoreWebView2Controller {
+	return e.controller
+}
+
+func boolToInt(input bool) int {
+	if input {
+		return 1
+	}
+	return 0
+}
+
+func (e *Chromium) NavigationCompleted(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs) uintptr {
+	if e.NavigationCompletedCallback != nil {
+		e.NavigationCompletedCallback(sender, args)
 	}
 	return 0
 }
