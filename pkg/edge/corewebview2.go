@@ -216,11 +216,14 @@ type ICoreWebView2Environment struct {
 
 func (e *ICoreWebView2Environment) CreateWebResourceResponse(content []byte, statusCode int, reasonPhrase string, headers string) (*ICoreWebView2WebResourceResponse, error) {
 	var err error
+	var stream uintptr
 
-	// Create stream for response
-	stream, err := w32.SHCreateMemStream(content)
-	if err != nil {
-		return nil, err
+	if len(content) > 0 {
+		// Create stream for response
+		stream, err = w32.SHCreateMemStream(content)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Convert string 'uri' to *uint16
@@ -236,7 +239,7 @@ func (e *ICoreWebView2Environment) CreateWebResourceResponse(content []byte, sta
 	var response *ICoreWebView2WebResourceResponse
 	_, _, err = e.vtbl.CreateWebResourceResponse.Call(
 		uintptr(unsafe.Pointer(e)),
-		uintptr(stream),
+		stream,
 		uintptr(statusCode),
 		uintptr(unsafe.Pointer(_reason)),
 		uintptr(unsafe.Pointer(_headers)),
