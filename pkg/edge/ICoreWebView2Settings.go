@@ -7,24 +7,28 @@ import (
 
 type _ICoreWebView2SettingsVtbl struct {
 	_IUnknownVtbl
-	GetIsScriptEnabled                ComProc
-	PutIsScriptEnabled                ComProc
-	GetIsWebMessageEnabled            ComProc
-	PutIsWebMessageEnabled            ComProc
-	GetAreDefaultScriptDialogsEnabled ComProc
-	PutAreDefaultScriptDialogsEnabled ComProc
-	GetIsStatusBarEnabled             ComProc
-	PutIsStatusBarEnabled             ComProc
-	GetAreDevToolsEnabled             ComProc
-	PutAreDevToolsEnabled             ComProc
-	GetAreDefaultContextMenusEnabled  ComProc
-	PutAreDefaultContextMenusEnabled  ComProc
-	GetAreHostObjectsAllowed          ComProc
-	PutAreHostObjectsAllowed          ComProc
-	GetIsZoomControlEnabled           ComProc
-	PutIsZoomControlEnabled           ComProc
-	GetIsBuiltInErrorPageEnabled      ComProc
-	PutIsBuiltInErrorPageEnabled      ComProc
+	GetIsScriptEnabled                  ComProc
+	PutIsScriptEnabled                  ComProc
+	GetIsWebMessageEnabled              ComProc
+	PutIsWebMessageEnabled              ComProc
+	GetAreDefaultScriptDialogsEnabled   ComProc
+	PutAreDefaultScriptDialogsEnabled   ComProc
+	GetIsStatusBarEnabled               ComProc
+	PutIsStatusBarEnabled               ComProc
+	GetAreDevToolsEnabled               ComProc
+	PutAreDevToolsEnabled               ComProc
+	GetAreDefaultContextMenusEnabled    ComProc
+	PutAreDefaultContextMenusEnabled    ComProc
+	GetAreHostObjectsAllowed            ComProc
+	PutAreHostObjectsAllowed            ComProc
+	GetIsZoomControlEnabled             ComProc
+	PutIsZoomControlEnabled             ComProc
+	GetIsBuiltInErrorPageEnabled        ComProc
+	PutIsBuiltInErrorPageEnabled        ComProc
+	GetUnknown1                         ComProc
+	PutUnknown1                         ComProc
+	GetAreBrowserAcceleratorKeysEnabled ComProc
+	PutAreBrowserAcceleratorKeysEnabled ComProc
 }
 
 type ICoreWebView2Settings struct {
@@ -258,6 +262,32 @@ func (i *ICoreWebView2Settings) PutIsBuiltInErrorPageEnabled(enabled bool) error
 	var err error
 
 	_, _, err = i.vtbl.PutIsBuiltInErrorPageEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(boolToInt(enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Settings) GetAreBrowserAcceleratorKeysEnabled() (bool, error) {
+	var err error
+	var enabled bool
+	_, _, err = i.vtbl.GetAreBrowserAcceleratorKeysEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return false, err
+	}
+	return enabled, nil
+}
+
+func (i *ICoreWebView2Settings) PutAreBrowserAcceleratorKeysEnabled(enabled bool) error {
+	var err error
+
+	_, _, err = i.vtbl.PutAreBrowserAcceleratorKeysEnabled.Call(
 		uintptr(unsafe.Pointer(i)),
 		uintptr(boolToInt(enabled)),
 	)
