@@ -186,9 +186,9 @@ type ICoreWebView2 struct {
 	vtbl *iCoreWebView2Vtbl
 }
 
-func (i *ICoreWebView2) GetSettings() (*ICoreWebView2Settings, error) {
+func (i *ICoreWebView2) GetSettings() (*ICoreWebViewSettings, error) {
 	var err error
-	var settings *ICoreWebView2Settings
+	var settings *ICoreWebViewSettings
 	_, _, err = i.vtbl.GetSettings.Call(
 		uintptr(unsafe.Pointer(i)),
 		uintptr(unsafe.Pointer(&settings)),

@@ -5,37 +5,43 @@ import (
 	"unsafe"
 )
 
-type _ICoreWebView2SettingsVtbl struct {
+// ICoreWebviewSettings is the merged settings class
+
+type _ICoreWebViewSettingsVtbl struct {
 	_IUnknownVtbl
-	GetIsScriptEnabled                ComProc
-	PutIsScriptEnabled                ComProc
-	GetIsWebMessageEnabled            ComProc
-	PutIsWebMessageEnabled            ComProc
-	GetAreDefaultScriptDialogsEnabled ComProc
-	PutAreDefaultScriptDialogsEnabled ComProc
-	GetIsStatusBarEnabled             ComProc
-	PutIsStatusBarEnabled             ComProc
-	GetAreDevToolsEnabled             ComProc
-	PutAreDevToolsEnabled             ComProc
-	GetAreDefaultContextMenusEnabled  ComProc
-	PutAreDefaultContextMenusEnabled  ComProc
-	GetAreHostObjectsAllowed          ComProc
-	PutAreHostObjectsAllowed          ComProc
-	GetIsZoomControlEnabled           ComProc
-	PutIsZoomControlEnabled           ComProc
-	GetIsBuiltInErrorPageEnabled      ComProc
-	PutIsBuiltInErrorPageEnabled      ComProc
+	GetIsScriptEnabled                  ComProc
+	PutIsScriptEnabled                  ComProc
+	GetIsWebMessageEnabled              ComProc
+	PutIsWebMessageEnabled              ComProc
+	GetAreDefaultScriptDialogsEnabled   ComProc
+	PutAreDefaultScriptDialogsEnabled   ComProc
+	GetIsStatusBarEnabled               ComProc
+	PutIsStatusBarEnabled               ComProc
+	GetAreDevToolsEnabled               ComProc
+	PutAreDevToolsEnabled               ComProc
+	GetAreDefaultContextMenusEnabled    ComProc
+	PutAreDefaultContextMenusEnabled    ComProc
+	GetAreHostObjectsAllowed            ComProc
+	PutAreHostObjectsAllowed            ComProc
+	GetIsZoomControlEnabled             ComProc
+	PutIsZoomControlEnabled             ComProc
+	GetIsBuiltInErrorPageEnabled        ComProc
+	PutIsBuiltInErrorPageEnabled        ComProc
+	GetUserAgent                        ComProc
+	PutUserAgent                        ComProc
+	GetAreBrowserAcceleratorKeysEnabled ComProc
+	PutAreBrowserAcceleratorKeysEnabled ComProc
 }
 
-type ICoreWebView2Settings struct {
-	vtbl *_ICoreWebView2SettingsVtbl
+type ICoreWebViewSettings struct {
+	vtbl *_ICoreWebViewSettingsVtbl
 }
 
-func (i *ICoreWebView2Settings) AddRef() uintptr {
+func (i *ICoreWebViewSettings) AddRef() uintptr {
 	return i.AddRef()
 }
 
-func (i *ICoreWebView2Settings) GetIsScriptEnabled() (bool, error) {
+func (i *ICoreWebViewSettings) GetIsScriptEnabled() (bool, error) {
 	var err error
 	var isScriptEnabled bool
 	_, _, err = i.vtbl.GetIsScriptEnabled.Call(
@@ -48,7 +54,7 @@ func (i *ICoreWebView2Settings) GetIsScriptEnabled() (bool, error) {
 	return isScriptEnabled, nil
 }
 
-func (i *ICoreWebView2Settings) PutIsScriptEnabled(isScriptEnabled bool) error {
+func (i *ICoreWebViewSettings) PutIsScriptEnabled(isScriptEnabled bool) error {
 	var err error
 
 	_, _, err = i.vtbl.PutIsScriptEnabled.Call(
@@ -61,7 +67,7 @@ func (i *ICoreWebView2Settings) PutIsScriptEnabled(isScriptEnabled bool) error {
 	return nil
 }
 
-func (i *ICoreWebView2Settings) GetIsWebMessageEnabled() (bool, error) {
+func (i *ICoreWebViewSettings) GetIsWebMessageEnabled() (bool, error) {
 	var err error
 	var isWebMessageEnabled bool
 	_, _, err = i.vtbl.GetIsWebMessageEnabled.Call(
@@ -74,7 +80,7 @@ func (i *ICoreWebView2Settings) GetIsWebMessageEnabled() (bool, error) {
 	return isWebMessageEnabled, nil
 }
 
-func (i *ICoreWebView2Settings) PutIsWebMessageEnabled(isWebMessageEnabled bool) error {
+func (i *ICoreWebViewSettings) PutIsWebMessageEnabled(isWebMessageEnabled bool) error {
 	var err error
 
 	_, _, err = i.vtbl.PutIsWebMessageEnabled.Call(
@@ -87,7 +93,7 @@ func (i *ICoreWebView2Settings) PutIsWebMessageEnabled(isWebMessageEnabled bool)
 	return nil
 }
 
-func (i *ICoreWebView2Settings) GetAreDefaultScriptDialogsEnabled() (bool, error) {
+func (i *ICoreWebViewSettings) GetAreDefaultScriptDialogsEnabled() (bool, error) {
 	var err error
 	var areDefaultScriptDialogsEnabled bool
 	_, _, err = i.vtbl.GetAreDefaultScriptDialogsEnabled.Call(
@@ -100,7 +106,7 @@ func (i *ICoreWebView2Settings) GetAreDefaultScriptDialogsEnabled() (bool, error
 	return areDefaultScriptDialogsEnabled, nil
 }
 
-func (i *ICoreWebView2Settings) PutAreDefaultScriptDialogsEnabled(areDefaultScriptDialogsEnabled bool) error {
+func (i *ICoreWebViewSettings) PutAreDefaultScriptDialogsEnabled(areDefaultScriptDialogsEnabled bool) error {
 	var err error
 
 	_, _, err = i.vtbl.PutAreDefaultScriptDialogsEnabled.Call(
@@ -113,7 +119,7 @@ func (i *ICoreWebView2Settings) PutAreDefaultScriptDialogsEnabled(areDefaultScri
 	return nil
 }
 
-func (i *ICoreWebView2Settings) GetIsStatusBarEnabled() (bool, error) {
+func (i *ICoreWebViewSettings) GetIsStatusBarEnabled() (bool, error) {
 	var err error
 	var isStatusBarEnabled bool
 	_, _, err = i.vtbl.GetIsStatusBarEnabled.Call(
@@ -126,7 +132,7 @@ func (i *ICoreWebView2Settings) GetIsStatusBarEnabled() (bool, error) {
 	return isStatusBarEnabled, nil
 }
 
-func (i *ICoreWebView2Settings) PutIsStatusBarEnabled(isStatusBarEnabled bool) error {
+func (i *ICoreWebViewSettings) PutIsStatusBarEnabled(isStatusBarEnabled bool) error {
 	var err error
 
 	_, _, err = i.vtbl.PutIsStatusBarEnabled.Call(
@@ -139,7 +145,7 @@ func (i *ICoreWebView2Settings) PutIsStatusBarEnabled(isStatusBarEnabled bool) e
 	return nil
 }
 
-func (i *ICoreWebView2Settings) GetAreDevToolsEnabled() (bool, error) {
+func (i *ICoreWebViewSettings) GetAreDevToolsEnabled() (bool, error) {
 	var err error
 	var areDevToolsEnabled bool
 	_, _, err = i.vtbl.GetAreDevToolsEnabled.Call(
@@ -152,7 +158,7 @@ func (i *ICoreWebView2Settings) GetAreDevToolsEnabled() (bool, error) {
 	return areDevToolsEnabled, nil
 }
 
-func (i *ICoreWebView2Settings) PutAreDevToolsEnabled(areDevToolsEnabled bool) error {
+func (i *ICoreWebViewSettings) PutAreDevToolsEnabled(areDevToolsEnabled bool) error {
 	var err error
 	_, _, err = i.vtbl.PutAreDevToolsEnabled.Call(
 		uintptr(unsafe.Pointer(i)),
@@ -164,7 +170,7 @@ func (i *ICoreWebView2Settings) PutAreDevToolsEnabled(areDevToolsEnabled bool) e
 	return nil
 }
 
-func (i *ICoreWebView2Settings) GetAreDefaultContextMenusEnabled() (bool, error) {
+func (i *ICoreWebViewSettings) GetAreDefaultContextMenusEnabled() (bool, error) {
 	var err error
 	var enabled bool
 	_, _, err = i.vtbl.GetAreDefaultContextMenusEnabled.Call(
@@ -177,7 +183,7 @@ func (i *ICoreWebView2Settings) GetAreDefaultContextMenusEnabled() (bool, error)
 	return enabled, nil
 }
 
-func (i *ICoreWebView2Settings) PutAreDefaultContextMenusEnabled(enabled bool) error {
+func (i *ICoreWebViewSettings) PutAreDefaultContextMenusEnabled(enabled bool) error {
 	var err error
 	_, _, err = i.vtbl.PutAreDefaultContextMenusEnabled.Call(
 		uintptr(unsafe.Pointer(i)),
@@ -189,7 +195,7 @@ func (i *ICoreWebView2Settings) PutAreDefaultContextMenusEnabled(enabled bool) e
 	return nil
 }
 
-func (i *ICoreWebView2Settings) GetAreHostObjectsAllowed() (bool, error) {
+func (i *ICoreWebViewSettings) GetAreHostObjectsAllowed() (bool, error) {
 	var err error
 	var allowed bool
 	_, _, err = i.vtbl.GetAreHostObjectsAllowed.Call(
@@ -202,7 +208,7 @@ func (i *ICoreWebView2Settings) GetAreHostObjectsAllowed() (bool, error) {
 	return allowed, nil
 }
 
-func (i *ICoreWebView2Settings) PutAreHostObjectsAllowed(allowed bool) error {
+func (i *ICoreWebViewSettings) PutAreHostObjectsAllowed(allowed bool) error {
 	var err error
 
 	_, _, err = i.vtbl.PutAreHostObjectsAllowed.Call(
@@ -215,7 +221,7 @@ func (i *ICoreWebView2Settings) PutAreHostObjectsAllowed(allowed bool) error {
 	return nil
 }
 
-func (i *ICoreWebView2Settings) GetIsZoomControlEnabled() (bool, error) {
+func (i *ICoreWebViewSettings) GetIsZoomControlEnabled() (bool, error) {
 	var err error
 	var enabled bool
 	_, _, err = i.vtbl.GetIsZoomControlEnabled.Call(
@@ -228,7 +234,7 @@ func (i *ICoreWebView2Settings) GetIsZoomControlEnabled() (bool, error) {
 	return enabled, nil
 }
 
-func (i *ICoreWebView2Settings) PutIsZoomControlEnabled(enabled bool) error {
+func (i *ICoreWebViewSettings) PutIsZoomControlEnabled(enabled bool) error {
 	var err error
 
 	_, _, err = i.vtbl.PutIsZoomControlEnabled.Call(
@@ -241,7 +247,7 @@ func (i *ICoreWebView2Settings) PutIsZoomControlEnabled(enabled bool) error {
 	return nil
 }
 
-func (i *ICoreWebView2Settings) GetIsBuiltInErrorPageEnabled() (bool, error) {
+func (i *ICoreWebViewSettings) GetIsBuiltInErrorPageEnabled() (bool, error) {
 	var err error
 	var enabled bool
 	_, _, err = i.vtbl.GetIsBuiltInErrorPageEnabled.Call(
@@ -254,10 +260,70 @@ func (i *ICoreWebView2Settings) GetIsBuiltInErrorPageEnabled() (bool, error) {
 	return enabled, nil
 }
 
-func (i *ICoreWebView2Settings) PutIsBuiltInErrorPageEnabled(enabled bool) error {
+func (i *ICoreWebViewSettings) PutIsBuiltInErrorPageEnabled(enabled bool) error {
 	var err error
 
 	_, _, err = i.vtbl.PutIsBuiltInErrorPageEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(boolToInt(enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebViewSettings) GetUserAgent() (string, error) {
+	var err error
+	// Create *uint16 to hold result
+	var _userAgent *uint16
+	_, _, err = i.vtbl.GetUserAgent.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(_userAgent)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return "", err
+	} // Get result and cleanup
+	userAgent := windows.UTF16PtrToString(_userAgent)
+	windows.CoTaskMemFree(unsafe.Pointer(_userAgent))
+	return userAgent, nil
+}
+
+func (i *ICoreWebViewSettings) PutUserAgent(userAgent string) error {
+	var err error
+	// Convert string 'userAgent' to *uint16
+	_userAgent, err := windows.UTF16PtrFromString(userAgent)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = i.vtbl.PutUserAgent.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(_userAgent)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebViewSettings) GetAreBrowserAcceleratorKeysEnabled() (bool, error) {
+	var err error
+	var enabled bool
+	_, _, err = i.vtbl.GetAreBrowserAcceleratorKeysEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return false, err
+	}
+	return enabled, nil
+}
+
+func (i *ICoreWebViewSettings) PutAreBrowserAcceleratorKeysEnabled(enabled bool) error {
+	var err error
+
+	_, _, err = i.vtbl.PutAreBrowserAcceleratorKeysEnabled.Call(
 		uintptr(unsafe.Pointer(i)),
 		uintptr(boolToInt(enabled)),
 	)
