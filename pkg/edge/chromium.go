@@ -270,7 +270,7 @@ func (e *Chromium) AcceleratorKeyPressed(sender *ICoreWebView2Controller, args *
 	return 0
 }
 
-func (e *Chromium) GetSettings() (*ICoreWebView2Settings, error) {
+func (e *Chromium) GetSettings() (*ICoreWebViewSettings, error) {
 	return e.webview.GetSettings()
 }
 
