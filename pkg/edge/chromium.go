@@ -31,6 +31,10 @@ type Chromium struct {
 	// Settings
 	Debug bool
 
+	// permissions
+	permissions      map[CoreWebView2PermissionKind]CoreWebView2PermissionState
+	globalPermission *CoreWebView2PermissionState
+
 	// Callbacks
 	MessageCallback              func(string)
 	WebResourceRequestedCallback func(request *ICoreWebView2WebResourceRequest, args *ICoreWebView2WebResourceRequestedEventArgs)
@@ -47,6 +51,7 @@ func NewChromium() *Chromium {
 	e.webResourceRequested = newICoreWebView2WebResourceRequestedEventHandler(e)
 	e.acceleratorKeyPressed = newICoreWebView2AcceleratorKeyPressedEventHandler(e)
 	e.navigationCompleted = newICoreWebView2NavigationCompletedEventHandler(e)
+	e.permissions = make(map[CoreWebView2PermissionKind]CoreWebView2PermissionState)
 
 	return e
 }
@@ -212,18 +217,34 @@ func (e *Chromium) MessageReceived(sender *ICoreWebView2, args *iCoreWebView2Web
 	return 0
 }
 
+func (e *Chromium) SetPermission(kind CoreWebView2PermissionKind, state CoreWebView2PermissionState) {
+	e.permissions[kind] = state
+}
+
+func (e *Chromium) SetGlobalPermission(state CoreWebView2PermissionState) {
+	e.globalPermission = &state
+}
+
 func (e *Chromium) PermissionRequested(_ *ICoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr {
-	var kind _CoreWebView2PermissionKind
+	var kind CoreWebView2PermissionKind
 	args.vtbl.GetPermissionKind.Call(
 		uintptr(unsafe.Pointer(args)),
 		uintptr(kind),
 	)
-	if kind == _CoreWebView2PermissionKindClipboardRead {
-		args.vtbl.PutState.Call(
-			uintptr(unsafe.Pointer(args)),
-			uintptr(_CoreWebView2PermissionStateAllow),
-		)
+	var result CoreWebView2PermissionState
+	if e.globalPermission != nil {
+		result = *e.globalPermission
+	} else {
+		var ok bool
+		result, ok = e.permissions[kind]
+		if !ok {
+			result = CoreWebView2PermissionStateDefault
+		}
 	}
+	args.vtbl.PutState.Call(
+		uintptr(unsafe.Pointer(args)),
+		uintptr(result),
+	)
 	return 0
 }
 
