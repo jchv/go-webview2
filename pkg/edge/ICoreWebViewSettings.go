@@ -31,6 +31,14 @@ type _ICoreWebViewSettingsVtbl struct {
 	PutUserAgent                        ComProc
 	GetAreBrowserAcceleratorKeysEnabled ComProc
 	PutAreBrowserAcceleratorKeysEnabled ComProc
+	GetIsPasswordAutosaveEnabled        ComProc
+	PutIsPasswordAutosaveEnabled        ComProc
+	GetIsGeneralAutofillEnabled         ComProc
+	PutIsGeneralAutofillEnabled         ComProc
+	GetIsPinchZoomEnabled               ComProc
+	PutIsPinchZoomEnabled               ComProc
+	GetIsSwipeNavigationEnabled         ComProc
+	PutIsSwipeNavigationEnabled         ComProc
 }
 
 type ICoreWebViewSettings struct {
@@ -324,6 +332,58 @@ func (i *ICoreWebViewSettings) PutAreBrowserAcceleratorKeysEnabled(enabled bool)
 	var err error
 
 	_, _, err = i.vtbl.PutAreBrowserAcceleratorKeysEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(boolToInt(enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebViewSettings) GetIsPinchZoomEnabled() (bool, error) {
+	var err error
+	var enabled bool
+	_, _, err = i.vtbl.GetIsPinchZoomEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return false, err
+	}
+	return enabled, nil
+}
+
+func (i *ICoreWebViewSettings) PutIsPinchZoomEnabled(enabled bool) error {
+	var err error
+
+	_, _, err = i.vtbl.PutIsPinchZoomEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(boolToInt(enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebViewSettings) GetIsSwipeNavigationEnabled() (bool, error) {
+	var err error
+	var enabled bool
+	_, _, err = i.vtbl.GetIsSwipeNavigationEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return false, err
+	}
+	return enabled, nil
+}
+
+func (i *ICoreWebViewSettings) PutIsSwipeNavigationEnabled(enabled bool) error {
+	var err error
+
+	_, _, err = i.vtbl.PutIsSwipeNavigationEnabled.Call(
 		uintptr(unsafe.Pointer(i)),
 		uintptr(boolToInt(enabled)),
 	)
