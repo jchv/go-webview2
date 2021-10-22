@@ -27,24 +27,24 @@ type _EventRegistrationToken struct {
 	value int64
 }
 
-type _CoreWebView2PermissionKind uint32
+type CoreWebView2PermissionKind uint32
 
 const (
-	_CoreWebView2PermissionKindUnknownPermission _CoreWebView2PermissionKind = iota
-	_CoreWebView2PermissionKindMicrophone
-	_CoreWebView2PermissionKindCamera
-	_CoreWebView2PermissionKindGeolocation
-	_CoreWebView2PermissionKindNotifications
-	_CoreWebView2PermissionKindOtherSensors
-	_CoreWebView2PermissionKindClipboardRead
+	CoreWebView2PermissionKindUnknownPermission CoreWebView2PermissionKind = iota
+	CoreWebView2PermissionKindMicrophone
+	CoreWebView2PermissionKindCamera
+	CoreWebView2PermissionKindGeolocation
+	CoreWebView2PermissionKindNotifications
+	CoreWebView2PermissionKindOtherSensors
+	CoreWebView2PermissionKindClipboardRead
 )
 
-type _CoreWebView2PermissionState uint32
+type CoreWebView2PermissionState uint32
 
 const (
-	_CoreWebView2PermissionStateDefault _CoreWebView2PermissionState = iota
-	_CoreWebView2PermissionStateAllow
-	_CoreWebView2PermissionStateDeny
+	CoreWebView2PermissionStateDefault CoreWebView2PermissionState = iota
+	CoreWebView2PermissionStateAllow
+	CoreWebView2PermissionStateDeny
 )
 
 func createCoreWebView2EnvironmentWithOptions(browserExecutableFolder, userDataFolder *uint16, environmentOptions uintptr, environmentCompletedHandle *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler) (uintptr, error) {
