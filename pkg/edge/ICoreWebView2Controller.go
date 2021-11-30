@@ -3,6 +3,7 @@ package edge
 import (
 	"github.com/jchv/go-webview2/internal/w32"
 	"golang.org/x/sys/windows"
+	"unsafe"
 )
 
 type _ICoreWebView2ControllerVtbl struct {
