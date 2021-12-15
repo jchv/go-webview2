@@ -6,14 +6,14 @@ package webview2
 import (
 	"encoding/json"
 	"errors"
-	"github.com/jchv/go-webview2/internal/w32"
-	"github.com/jchv/go-webview2/pkg/edge"
 	"log"
 	"reflect"
 	"strconv"
 	"sync"
 	"unsafe"
 
+	"github.com/jchv/go-webview2/internal/w32"
+	"github.com/jchv/go-webview2/pkg/edge"
 	"golang.org/x/sys/windows"
 )
 
@@ -53,22 +53,39 @@ type webview struct {
 	dispatchq  []func()
 }
 
+type WebViewOptions struct {
+	Window   unsafe.Pointer
+	Debug    bool
+	DataPath string
+}
+
 // New creates a new webview in a new window.
-func New(debug bool) WebView { return NewWindow(debug, nil) }
+func New(debug bool) WebView { return NewWindowWithOptions(WebViewOptions{Debug: debug}) }
+
+// NewWithOptions creates a new webview in a new window.
+func NewWithOptions(options WebViewOptions) WebView {
+	return NewWindowWithOptions(options)
+}
 
 // NewWindow creates a new webview using an existing window.
 func NewWindow(debug bool, window unsafe.Pointer) WebView {
+	return NewWindowWithOptions(WebViewOptions{Debug: debug, Window: window})
+}
+
+// NewWindowWithOptions creates a new webview using an existing window.
+func NewWindowWithOptions(options WebViewOptions) WebView {
 	w := &webview{}
 	w.bindings = map[string]interface{}{}
 
 	chromium := edge.NewChromium()
 	chromium.MessageCallback = w.msgcb
-	chromium.Debug = debug
+	chromium.Debug = options.Debug
+	chromium.DataPath = options.DataPath
 	chromium.SetPermission(edge.CoreWebView2PermissionKindClipboardRead, edge.CoreWebView2PermissionStateAllow)
 
 	w.browser = chromium
 	w.mainthread, _, _ = w32.Kernel32GetCurrentThreadID.Call()
-	if !w.Create(debug, window) {
+	if !w.Create(options.Debug, options.Window) {
 		return nil
 	}
 	return w
