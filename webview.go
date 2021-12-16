@@ -60,20 +60,17 @@ type WebViewOptions struct {
 }
 
 // New creates a new webview in a new window.
-func New(debug bool) WebView { return NewWindowWithOptions(WebViewOptions{Debug: debug}) }
-
-// NewWithOptions creates a new webview in a new window.
-func NewWithOptions(options WebViewOptions) WebView {
-	return NewWindowWithOptions(options)
-}
+func New(debug bool) WebView { return NewWithOptions(WebViewOptions{Debug: debug}) }
 
 // NewWindow creates a new webview using an existing window.
+//
+// Deprecated: Use NewWithOptions.
 func NewWindow(debug bool, window unsafe.Pointer) WebView {
-	return NewWindowWithOptions(WebViewOptions{Debug: debug, Window: window})
+	return NewWithOptions(WebViewOptions{Debug: debug, Window: window})
 }
 
-// NewWindowWithOptions creates a new webview using an existing window.
-func NewWindowWithOptions(options WebViewOptions) WebView {
+// NewWithOptions creates a new webview using the provided options.
+func NewWithOptions(options WebViewOptions) WebView {
 	w := &webview{}
 	w.bindings = map[string]interface{}{}
 
