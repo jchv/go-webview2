@@ -51,12 +51,14 @@ type webview struct {
 	m          sync.Mutex
 	bindings   map[string]interface{}
 	dispatchq  []func()
+	options    WebViewOptions
 }
 
 type WebViewOptions struct {
-	Window   unsafe.Pointer
-	Debug    bool
-	DataPath string
+	Window        unsafe.Pointer
+	Debug         bool
+	DataPath      string
+	ShowMaximized bool
 }
 
 // New creates a new webview in a new window.
@@ -71,7 +73,7 @@ func NewWindow(debug bool, window unsafe.Pointer) WebView {
 
 // NewWithOptions creates a new webview using the provided options.
 func NewWithOptions(options WebViewOptions) WebView {
-	w := &webview{}
+	w := &webview{options: options}
 	w.bindings = map[string]interface{}{}
 
 	chromium := edge.NewChromium()
@@ -244,7 +246,12 @@ func (w *webview) Create(debug bool, window unsafe.Pointer) bool {
 	)
 	setWindowContext(w.hwnd, w)
 
-	w32.User32ShowWindow.Call(w.hwnd, w32.SWShow)
+	cmdShow := uintptr(w32.SWShow)
+	if w.options.ShowMaximized {
+		cmdShow = w32.SWShowMaximized
+	}
+
+	w32.User32ShowWindow.Call(w.hwnd, cmdShow)
 	w32.User32UpdateWindow.Call(w.hwnd)
 	w32.User32SetFocus.Call(w.hwnd)
 
