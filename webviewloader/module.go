@@ -134,6 +134,7 @@ func loadFromMemory(nativeErr error) error {
 		}
 		memCreate = memModule.Proc("CreateCoreWebView2EnvironmentWithOptions")
 		memCompareBrowserVersions = memModule.Proc("CompareBrowserVersions")
+		memGetAvailableCoreWebView2BrowserVersionString = memModule.Proc("GetAvailableCoreWebView2BrowserVersionString")
 	})
 	return err
 }
