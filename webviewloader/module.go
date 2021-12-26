@@ -86,7 +86,7 @@ func GetInstalledVersion() (string, error) {
 			uintptr(unsafe.Pointer(nil)),
 			uintptr(unsafe.Pointer(&result)))
 	}
-	if err != windows.ERROR_SUCCESS {
+	if err != nil {
 		return "", err
 	}
 	version := windows.UTF16PtrToString(result)
