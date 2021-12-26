@@ -10,15 +10,17 @@ import (
 )
 
 var (
-	nativeModule                 = windows.NewLazyDLL("WebView2Loader")
-	nativeCreate                 = nativeModule.NewProc("CreateCoreWebView2EnvironmentWithOptions")
-	nativeCompareBrowserVersions = nativeModule.NewProc("CompareBrowserVersions")
+	nativeModule                                       = windows.NewLazyDLL("WebView2Loader")
+	nativeCreate                                       = nativeModule.NewProc("CreateCoreWebView2EnvironmentWithOptions")
+	nativeCompareBrowserVersions                       = nativeModule.NewProc("CompareBrowserVersions")
+	nativeGetAvailableCoreWebView2BrowserVersionString = nativeModule.NewProc("GetAvailableCoreWebView2BrowserVersionString")
 
-	memOnce                   sync.Once
-	memModule                 winloader.Module
-	memCreate                 winloader.Proc
-	memCompareBrowserVersions winloader.Proc
-	memErr                    error
+	memOnce                                         sync.Once
+	memModule                                       winloader.Module
+	memCreate                                       winloader.Proc
+	memCompareBrowserVersions                       winloader.Proc
+	memGetAvailableCoreWebView2BrowserVersionString winloader.Proc
+	memErr                                          error
 )
 
 // CompareBrowserVersions will compare the 2 given versions and return:
@@ -60,6 +62,36 @@ func CompareBrowserVersions(v1 string, v2 string) (int, error) {
 		return result, err
 	}
 	return result, nil
+}
+
+// GetInstalledVersion returns the installed version of the webview2 runtime.
+// If there is no version installed, a blank string is returned.
+func GetInstalledVersion() (string, error) {
+	nativeErr := nativeModule.Load()
+	if nativeErr == nil {
+		nativeErr = nativeGetAvailableCoreWebView2BrowserVersionString.Find()
+	}
+	var err error
+	var result *uint16
+	if nativeErr != nil {
+		err := loadFromMemory(nativeErr)
+		if err != nil {
+			return "", fmt.Errorf("Unable to load WebView2Loader.dll from disk: %v -- or from memory: %w", nativeErr, memErr)
+		}
+		_, _, err = memGetAvailableCoreWebView2BrowserVersionString.Call(
+			uint64(uintptr(unsafe.Pointer(nil))),
+			uint64(uintptr(unsafe.Pointer(&result))))
+	} else {
+		_, _, err = nativeCompareBrowserVersions.Call(
+			uintptr(unsafe.Pointer(nil)),
+			uintptr(unsafe.Pointer(&result)))
+	}
+	if err != windows.ERROR_SUCCESS {
+		return "", err
+	}
+	version := windows.UTF16PtrToString(result)
+	windows.CoTaskMemFree(unsafe.Pointer(result))
+	return version, nil
 }
 
 // CreateCoreWebView2EnvironmentWithOptions tries to load WebviewLoader2 and
