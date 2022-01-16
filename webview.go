@@ -40,6 +40,7 @@ type browser interface {
 	Navigate(url string)
 	Init(script string)
 	Eval(script string)
+	NotifyParentWindowPositionChanged() error
 }
 
 type webview struct {
@@ -168,6 +169,12 @@ func (w *webview) callbinding(d rpcMessage) (interface{}, error) {
 func wndproc(hwnd, msg, wp, lp uintptr) uintptr {
 	if w, ok := getWindowContext(hwnd).(*webview); ok {
 		switch msg {
+		case w32.WMMove, w32.WMMoving:
+			w.browser.NotifyParentWindowPositionChanged()
+		case w32.WMNCLButtonDown:
+			w32.User32SetFocus.Call(w.hwnd)
+			r, _, _ := w32.User32DefWindowProcW.Call(hwnd, msg, wp, lp)
+			return r
 		case w32.WMSize:
 			w.browser.Resize()
 		case w32.WMClose:

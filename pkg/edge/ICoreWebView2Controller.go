@@ -105,3 +105,14 @@ func (i *ICoreWebView2Controller) GetICoreWebView2Controller2() *ICoreWebView2Co
 
 	return result
 }
+
+func (i *ICoreWebView2Controller) NotifyParentWindowPositionChanged() error {
+	var err error
+	_, _, err = i.vtbl.NotifyParentWindowPositionChanged.Call(
+		uintptr(unsafe.Pointer(i)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
