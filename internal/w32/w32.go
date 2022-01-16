@@ -1,11 +1,10 @@
 package w32
 
 import (
+	"golang.org/x/sys/windows"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
-
-	"golang.org/x/sys/windows"
 )
 
 var (
