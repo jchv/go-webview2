@@ -1,8 +1,9 @@
 package edge
 
 import (
-	"golang.org/x/sys/windows"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 type _ICoreWebView2WebResourceRequestVtbl struct {
@@ -21,7 +22,8 @@ type ICoreWebView2WebResourceRequest struct {
 }
 
 func (i *ICoreWebView2WebResourceRequest) AddRef() uintptr {
-	return i.AddRef()
+	r, _, _ := i.vtbl.AddRef.Call()
+	return r
 }
 
 func (i *ICoreWebView2WebResourceRequest) GetUri() (string, error) {

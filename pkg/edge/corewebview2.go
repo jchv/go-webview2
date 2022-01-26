@@ -4,11 +4,12 @@
 package edge
 
 import (
-	"github.com/jchv/go-webview2/internal/w32"
 	"log"
 	"runtime"
 	"syscall"
 	"unsafe"
+
+	"github.com/jchv/go-webview2/internal/w32"
 
 	"github.com/jchv/go-webview2/webviewloader"
 	"golang.org/x/sys/windows"
@@ -24,7 +25,7 @@ func init() {
 }
 
 type _EventRegistrationToken struct {
-	value int64
+	Value int64
 }
 
 type CoreWebView2PermissionKind uint32

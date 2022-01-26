@@ -14,3 +14,8 @@ type iCoreWebView2_2Vtbl struct {
 type ICoreWebView2_2 struct {
 	vtbl *iCoreWebView2_2Vtbl
 }
+
+func (i *ICoreWebView2_2) AddRef() uintptr {
+	r, _, _ := i.vtbl.AddRef.Call()
+	return r
+}

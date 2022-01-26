@@ -1,8 +1,9 @@
 package edge
 
 import (
-	"golang.org/x/sys/windows"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 type _ICoreWebView2WebResourceRequestedEventArgsVtbl struct {
@@ -19,7 +20,8 @@ type ICoreWebView2WebResourceRequestedEventArgs struct {
 }
 
 func (i *ICoreWebView2WebResourceRequestedEventArgs) AddRef() uintptr {
-	return i.AddRef()
+	r, _, _ := i.vtbl.AddRef.Call()
+	return r
 }
 
 func (i *ICoreWebView2WebResourceRequestedEventArgs) PutResponse(response *ICoreWebView2WebResourceResponse) error {

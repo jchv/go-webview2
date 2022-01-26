@@ -1,8 +1,9 @@
 package edge
 
 import (
-	"golang.org/x/sys/windows"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 // ICoreWebviewSettings is the merged settings class
@@ -46,7 +47,8 @@ type ICoreWebViewSettings struct {
 }
 
 func (i *ICoreWebViewSettings) AddRef() uintptr {
-	return i.AddRef()
+	r, _, _ := i.vtbl.AddRef.Call()
+	return r
 }
 
 func (i *ICoreWebViewSettings) GetIsScriptEnabled() (bool, error) {

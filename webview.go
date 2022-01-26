@@ -14,6 +14,7 @@ import (
 
 	"github.com/jchv/go-webview2/internal/w32"
 	"github.com/jchv/go-webview2/pkg/edge"
+
 	"golang.org/x/sys/windows"
 )
 
@@ -184,15 +185,15 @@ func wndproc(hwnd, msg, wp, lp uintptr) uintptr {
 	if w, ok := getWindowContext(hwnd).(*webview); ok {
 		switch msg {
 		case w32.WMMove, w32.WMMoving:
-			w.browser.NotifyParentWindowPositionChanged()
+			_ = w.browser.NotifyParentWindowPositionChanged()
 		case w32.WMNCLButtonDown:
-			w32.User32SetFocus.Call(w.hwnd)
+			_, _, _ = w32.User32SetFocus.Call(w.hwnd)
 			r, _, _ := w32.User32DefWindowProcW.Call(hwnd, msg, wp, lp)
 			return r
 		case w32.WMSize:
 			w.browser.Resize()
 		case w32.WMClose:
-			w32.User32DestroyWindow.Call(hwnd)
+			_, _, _ = w32.User32DestroyWindow.Call(hwnd)
 		case w32.WMDestroy:
 			w.Terminate()
 		case w32.WMGetMinMaxInfo:
@@ -216,7 +217,7 @@ func wndproc(hwnd, msg, wp, lp uintptr) uintptr {
 
 func (w *webview) Create(debug bool, window unsafe.Pointer) bool {
 	var hinstance windows.Handle
-	windows.GetModuleHandleEx(0, nil, &hinstance)
+	_ = windows.GetModuleHandleEx(0, nil, &hinstance)
 
 	icow, _, _ := w32.User32GetSystemMetrics.Call(w32.SystemMetricsCxIcon)
 	icoh, _, _ := w32.User32GetSystemMetrics.Call(w32.SystemMetricsCyIcon)
@@ -232,7 +233,7 @@ func (w *webview) Create(debug bool, window unsafe.Pointer) bool {
 		HIconSm:       windows.Handle(icon),
 		LpfnWndProc:   windows.NewCallback(wndproc),
 	}
-	w32.User32RegisterClassExW.Call(uintptr(unsafe.Pointer(&wc)))
+	_, _, _ = w32.User32RegisterClassExW.Call(uintptr(unsafe.Pointer(&wc)))
 
 	windowName, _ := windows.UTF16PtrFromString("")
 	w.hwnd, _, _ = w32.User32CreateWindowExW.Call(
@@ -251,9 +252,9 @@ func (w *webview) Create(debug bool, window unsafe.Pointer) bool {
 	)
 	setWindowContext(w.hwnd, w)
 
-	w32.User32ShowWindow.Call(w.hwnd, w32.SWShow)
-	w32.User32UpdateWindow.Call(w.hwnd)
-	w32.User32SetFocus.Call(w.hwnd)
+	_, _, _ = w32.User32ShowWindow.Call(w.hwnd, w32.SWShow)
+	_, _, _ = w32.User32UpdateWindow.Call(w.hwnd)
+	_, _, _ = w32.User32SetFocus.Call(w.hwnd)
 
 	if !w.browser.Embed(w.hwnd) {
 		return false
@@ -268,7 +269,7 @@ func (w *webview) Destroy() {
 func (w *webview) Run() {
 	var msg w32.Msg
 	for {
-		w32.User32GetMessageW.Call(
+		_, _, _ = w32.User32GetMessageW.Call(
 			uintptr(unsafe.Pointer(&msg)),
 			0,
 			0,
@@ -285,13 +286,13 @@ func (w *webview) Run() {
 		} else if msg.Message == w32.WMQuit {
 			return
 		}
-		w32.User32TranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
-		w32.User32DispatchMessageW.Call(uintptr(unsafe.Pointer(&msg)))
+		_, _, _ = w32.User32TranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
+		_, _, _ = w32.User32DispatchMessageW.Call(uintptr(unsafe.Pointer(&msg)))
 	}
 }
 
 func (w *webview) Terminate() {
-	w32.User32PostQuitMessage.Call(0)
+	_, _, _ = w32.User32PostQuitMessage.Call(0)
 }
 
 func (w *webview) Window() unsafe.Pointer {
@@ -307,7 +308,7 @@ func (w *webview) SetTitle(title string) {
 	if err != nil {
 		_title, _ = windows.UTF16FromString("")
 	}
-	w32.User32SetWindowTextW.Call(w.hwnd, uintptr(unsafe.Pointer(&_title[0])))
+	_, _, _ = w32.User32SetWindowTextW.Call(w.hwnd, uintptr(unsafe.Pointer(&_title[0])))
 }
 
 func (w *webview) SetSize(width int, height int, hints Hint) {
@@ -318,7 +319,7 @@ func (w *webview) SetSize(width int, height int, hints Hint) {
 	} else {
 		style |= (w32.WSThickFrame | w32.WSMaximizeBox)
 	}
-	w32.User32SetWindowLongPtrW.Call(w.hwnd, uintptr(index), style)
+	_, _, _ = w32.User32SetWindowLongPtrW.Call(w.hwnd, uintptr(index), style)
 
 	if hints == HintMax {
 		w.maxsz.X = int32(width)
@@ -332,8 +333,8 @@ func (w *webview) SetSize(width int, height int, hints Hint) {
 		r.Top = 0
 		r.Right = int32(width)
 		r.Bottom = int32(height)
-		w32.User32AdjustWindowRect.Call(uintptr(unsafe.Pointer(&r)), w32.WSOverlappedWindow, 0)
-		w32.User32SetWindowPos.Call(
+		_, _, _ = w32.User32AdjustWindowRect.Call(uintptr(unsafe.Pointer(&r)), w32.WSOverlappedWindow, 0)
+		_, _, _ = w32.User32SetWindowPos.Call(
 			w.hwnd, 0, uintptr(r.Left), uintptr(r.Top), uintptr(r.Right-r.Left), uintptr(r.Bottom-r.Top),
 			w32.SWPNoZOrder|w32.SWPNoActivate|w32.SWPNoMove|w32.SWPFrameChanged)
 		w.browser.Resize()
@@ -352,7 +353,7 @@ func (w *webview) Dispatch(f func()) {
 	w.m.Lock()
 	w.dispatchq = append(w.dispatchq, f)
 	w.m.Unlock()
-	w32.User32PostThreadMessageW.Call(w.mainthread, w32.WMApp, 0, 0)
+	_, _, _ = w32.User32PostThreadMessageW.Call(w.mainthread, w32.WMApp, 0, 0)
 }
 
 func (w *webview) Bind(name string, f interface{}) error {
