@@ -1,8 +1,9 @@
 package edge
 
 import (
-	"golang.org/x/sys/windows"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 type _ICoreWebView2AcceleratorKeyPressedEventArgsVtbl struct {
@@ -20,7 +21,8 @@ type ICoreWebView2AcceleratorKeyPressedEventArgs struct {
 }
 
 func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) AddRef() uintptr {
-	return i.AddRef()
+	r, _, _ := i.vtbl.AddRef.Call()
+	return r
 }
 
 func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) GetKeyEventKind() (COREWEBVIEW2_KEY_EVENT_KIND, error) {

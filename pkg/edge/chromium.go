@@ -106,22 +106,22 @@ func (e *Chromium) Embed(hwnd uintptr) bool {
 		if r == 0 {
 			break
 		}
-		w32.User32TranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
-		w32.User32DispatchMessageW.Call(uintptr(unsafe.Pointer(&msg)))
+		_, _, _ = w32.User32TranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
+		_, _, _ = w32.User32DispatchMessageW.Call(uintptr(unsafe.Pointer(&msg)))
 	}
 	e.Init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}")
 	return true
 }
 
 func (e *Chromium) Navigate(url string) {
-	e.webview.vtbl.Navigate.Call(
+	_, _, _ = e.webview.vtbl.Navigate.Call(
 		uintptr(unsafe.Pointer(e.webview)),
 		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(url))),
 	)
 }
 
 func (e *Chromium) Init(script string) {
-	e.webview.vtbl.AddScriptToExecuteOnDocumentCreated.Call(
+	_, _, _ = e.webview.vtbl.AddScriptToExecuteOnDocumentCreated.Call(
 		uintptr(unsafe.Pointer(e.webview)),
 		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(script))),
 		0,
@@ -129,13 +129,12 @@ func (e *Chromium) Init(script string) {
 }
 
 func (e *Chromium) Eval(script string) {
-
 	_script, err := windows.UTF16PtrFromString(script)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	e.webview.vtbl.ExecuteScript.Call(
+	_, _, _ = e.webview.vtbl.ExecuteScript.Call(
 		uintptr(unsafe.Pointer(e.webview)),
 		uintptr(unsafe.Pointer(_script)),
 		0,
@@ -166,10 +165,10 @@ func (e *Chromium) EnvironmentCompleted(res uintptr, env *ICoreWebView2Environme
 	if int64(res) < 0 {
 		log.Fatalf("Creating environment failed with %08x", res)
 	}
-	env.vtbl.AddRef.Call(uintptr(unsafe.Pointer(env)))
+	_, _, _ = env.vtbl.AddRef.Call(uintptr(unsafe.Pointer(env)))
 	e.environment = env
 
-	env.vtbl.CreateCoreWebView2Controller.Call(
+	_, _, _ = env.vtbl.CreateCoreWebView2Controller.Call(
 		uintptr(unsafe.Pointer(env)),
 		e.hwnd,
 		uintptr(unsafe.Pointer(e.controllerCompleted)),
@@ -181,39 +180,39 @@ func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller
 	if int64(res) < 0 {
 		log.Fatalf("Creating controller failed with %08x", res)
 	}
-	controller.vtbl.AddRef.Call(uintptr(unsafe.Pointer(controller)))
+	_, _, _ = controller.vtbl.AddRef.Call(uintptr(unsafe.Pointer(controller)))
 	e.controller = controller
 
 	var token _EventRegistrationToken
-	controller.vtbl.GetCoreWebView2.Call(
+	_, _, _ = controller.vtbl.GetCoreWebView2.Call(
 		uintptr(unsafe.Pointer(controller)),
 		uintptr(unsafe.Pointer(&e.webview)),
 	)
-	e.webview.vtbl.AddRef.Call(
+	_, _, _ = e.webview.vtbl.AddRef.Call(
 		uintptr(unsafe.Pointer(e.webview)),
 	)
-	e.webview.vtbl.AddWebMessageReceived.Call(
+	_, _, _ = e.webview.vtbl.AddWebMessageReceived.Call(
 		uintptr(unsafe.Pointer(e.webview)),
 		uintptr(unsafe.Pointer(e.webMessageReceived)),
 		uintptr(unsafe.Pointer(&token)),
 	)
-	e.webview.vtbl.AddPermissionRequested.Call(
+	_, _, _ = e.webview.vtbl.AddPermissionRequested.Call(
 		uintptr(unsafe.Pointer(e.webview)),
 		uintptr(unsafe.Pointer(e.permissionRequested)),
 		uintptr(unsafe.Pointer(&token)),
 	)
-	e.webview.vtbl.AddWebResourceRequested.Call(
+	_, _, _ = e.webview.vtbl.AddWebResourceRequested.Call(
 		uintptr(unsafe.Pointer(e.webview)),
 		uintptr(unsafe.Pointer(e.webResourceRequested)),
 		uintptr(unsafe.Pointer(&token)),
 	)
-	e.webview.vtbl.AddNavigationCompleted.Call(
+	_, _, _ = e.webview.vtbl.AddNavigationCompleted.Call(
 		uintptr(unsafe.Pointer(e.webview)),
 		uintptr(unsafe.Pointer(e.navigationCompleted)),
 		uintptr(unsafe.Pointer(&token)),
 	)
 
-	e.controller.AddAcceleratorKeyPressed(e.acceleratorKeyPressed, &token)
+	_ = e.controller.AddAcceleratorKeyPressed(e.acceleratorKeyPressed, &token)
 
 	atomic.StoreUintptr(&e.inited, 1)
 
@@ -222,14 +221,14 @@ func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller
 
 func (e *Chromium) MessageReceived(sender *ICoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr {
 	var message *uint16
-	args.vtbl.TryGetWebMessageAsString.Call(
+	_, _, _ = args.vtbl.TryGetWebMessageAsString.Call(
 		uintptr(unsafe.Pointer(args)),
 		uintptr(unsafe.Pointer(&message)),
 	)
 	if e.MessageCallback != nil {
 		e.MessageCallback(w32.Utf16PtrToString(message))
 	}
-	sender.vtbl.PostWebMessageAsString.Call(
+	_, _, _ = sender.vtbl.PostWebMessageAsString.Call(
 		uintptr(unsafe.Pointer(sender)),
 		uintptr(unsafe.Pointer(message)),
 	)
@@ -247,7 +246,7 @@ func (e *Chromium) SetGlobalPermission(state CoreWebView2PermissionState) {
 
 func (e *Chromium) PermissionRequested(_ *ICoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr {
 	var kind CoreWebView2PermissionKind
-	args.vtbl.GetPermissionKind.Call(
+	_, _, _ = args.vtbl.GetPermissionKind.Call(
 		uintptr(unsafe.Pointer(args)),
 		uintptr(kind),
 	)
@@ -261,7 +260,7 @@ func (e *Chromium) PermissionRequested(_ *ICoreWebView2, args *iCoreWebView2Perm
 			result = CoreWebView2PermissionStateDefault
 		}
 	}
-	args.vtbl.PutState.Call(
+	_, _, _ = args.vtbl.PutState.Call(
 		uintptr(unsafe.Pointer(args)),
 		uintptr(result),
 	)
@@ -303,11 +302,11 @@ func (e *Chromium) AcceleratorKeyPressed(sender *ICoreWebView2Controller, args *
 		virtualKey, _ := args.GetVirtualKey()
 		status, _ := args.GetPhysicalKeyStatus()
 		if !status.WasKeyDown {
-			args.PutHandled(e.AcceleratorKeyCallback(virtualKey))
+			_ = args.PutHandled(e.AcceleratorKeyCallback(virtualKey))
 			return 0
 		}
 	}
-	args.PutHandled(false)
+	_ = args.PutHandled(false)
 	return 0
 }
 

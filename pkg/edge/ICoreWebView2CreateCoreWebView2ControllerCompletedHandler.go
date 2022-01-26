@@ -10,9 +10,6 @@ type iCoreWebView2CreateCoreWebView2ControllerCompletedHandler struct {
 	impl _ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerImpl
 }
 
-func (i *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler) AddRef() uintptr {
-	return i.AddRef()
-}
 func _ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerIUnknownQueryInterface(this *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler, refiid, object uintptr) uintptr {
 	return this.impl.QueryInterface(refiid, object)
 }

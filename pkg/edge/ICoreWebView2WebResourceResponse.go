@@ -16,5 +16,6 @@ type ICoreWebView2WebResourceResponse struct {
 }
 
 func (i *ICoreWebView2WebResourceResponse) AddRef() uintptr {
-	return i.AddRef()
+	r, _, _ := i.vtbl.AddRef.Call()
+	return r
 }

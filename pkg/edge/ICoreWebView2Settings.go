@@ -1,8 +1,9 @@
 package edge
 
 import (
-	"golang.org/x/sys/windows"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 type _ICoreWebView2SettingsVtbl struct {
@@ -32,7 +33,8 @@ type ICoreWebView2Settings struct {
 }
 
 func (i *ICoreWebView2Settings) AddRef() uintptr {
-	return i.AddRef()
+	r, _, _ := i.vtbl.AddRef.Call()
+	return r
 }
 
 func (i *ICoreWebView2Settings) GetIsScriptEnabled() (bool, error) {

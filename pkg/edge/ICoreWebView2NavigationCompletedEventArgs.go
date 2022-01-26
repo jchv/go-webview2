@@ -12,5 +12,6 @@ type ICoreWebView2NavigationCompletedEventArgs struct {
 }
 
 func (i *ICoreWebView2NavigationCompletedEventArgs) AddRef() uintptr {
-	return i.AddRef()
+	r, _, _ := i.vtbl.AddRef.Call()
+	return r
 }

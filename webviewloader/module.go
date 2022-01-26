@@ -44,7 +44,7 @@ func CompareBrowserVersions(v1 string, v2 string) (int, error) {
 	}
 	var result int
 	if nativeErr != nil {
-		err := loadFromMemory(nativeErr)
+		err = loadFromMemory(nativeErr)
 		if err != nil {
 			return 0, fmt.Errorf("Unable to load WebView2Loader.dll from disk: %v -- or from memory: %w", nativeErr, memErr)
 		}
@@ -74,7 +74,7 @@ func GetInstalledVersion() (string, error) {
 	var err error
 	var result *uint16
 	if nativeErr != nil {
-		err := loadFromMemory(nativeErr)
+		err = loadFromMemory(nativeErr)
 		if err != nil {
 			return "", fmt.Errorf("Unable to load WebView2Loader.dll from disk: %v -- or from memory: %w", nativeErr, memErr)
 		}

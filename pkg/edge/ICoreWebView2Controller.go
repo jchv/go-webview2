@@ -1,9 +1,10 @@
 package edge
 
 import (
+	"unsafe"
+
 	"github.com/jchv/go-webview2/internal/w32"
 	"golang.org/x/sys/windows"
-	"unsafe"
 )
 
 type _ICoreWebView2ControllerVtbl struct {
@@ -38,7 +39,8 @@ type ICoreWebView2Controller struct {
 }
 
 func (i *ICoreWebView2Controller) AddRef() uintptr {
-	return i.AddRef()
+	r, _, _ := i.vtbl.AddRef.Call()
+	return r
 }
 
 func (i *ICoreWebView2Controller) GetBounds() (*w32.Rect, error) {
@@ -98,7 +100,7 @@ func (i *ICoreWebView2Controller) GetICoreWebView2Controller2() *ICoreWebView2Co
 	var result *ICoreWebView2Controller2
 
 	iidICoreWebView2Controller2 := NewGUID("{c979903e-d4ca-4228-92eb-47ee3fa96eab}")
-	i.vtbl.QueryInterface.Call(
+	_, _, _ = i.vtbl.QueryInterface.Call(
 		uintptr(unsafe.Pointer(i)),
 		uintptr(unsafe.Pointer(iidICoreWebView2Controller2)),
 		uintptr(unsafe.Pointer(&result)))

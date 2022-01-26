@@ -10,9 +10,6 @@ type ICoreWebView2NavigationCompletedEventHandler struct {
 	impl _ICoreWebView2NavigationCompletedEventHandlerImpl
 }
 
-func (i *ICoreWebView2NavigationCompletedEventHandler) AddRef() uintptr {
-	return i.AddRef()
-}
 func _ICoreWebView2NavigationCompletedEventHandlerIUnknownQueryInterface(this *ICoreWebView2NavigationCompletedEventHandler, refiid, object uintptr) uintptr {
 	return this.impl.QueryInterface(refiid, object)
 }
