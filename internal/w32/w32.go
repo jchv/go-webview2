@@ -58,10 +58,13 @@ const (
 
 const (
 	WMDestroy       = 0x0002
+	WMMove          = 0x0003
 	WMSize          = 0x0005
 	WMClose         = 0x0010
 	WMQuit          = 0x0012
 	WMGetMinMaxInfo = 0x0024
+	WMNCLButtonDown = 0x00A1
+	WMMoving        = 0x0216
 	WMApp           = 0x8000
 )
 
