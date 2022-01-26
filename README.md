@@ -1,3 +1,5 @@
+[![Go](https://github.com/jchv/go-webview2/actions/workflows/go.yml/badge.svg)](https://github.com/jchv/go-webview2/actions/workflows/go.yml)
+
 # go-webview2
 This is a proof of concept for embedding Webview2 into Go without CGo. It is based on [webview/webview](https://github.com/webview/webview) and provides a compatible API.
 
