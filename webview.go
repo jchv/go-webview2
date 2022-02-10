@@ -55,10 +55,16 @@ type webview struct {
 	dispatchq  []func()
 }
 
+type WindowOptions struct {
+	Title string
+}
+
 type WebViewOptions struct {
 	Window   unsafe.Pointer
 	Debug    bool
 	DataPath string
+
+	WindowOptions WindowOptions
 }
 
 // New creates a new webview in a new window.
@@ -84,7 +90,7 @@ func NewWithOptions(options WebViewOptions) WebView {
 
 	w.browser = chromium
 	w.mainthread, _, _ = w32.Kernel32GetCurrentThreadID.Call()
-	if !w.Create(options.Debug, options.Window) {
+	if !w.CreateWithOptions(options.WindowOptions) {
 		return nil
 	}
 	return w
@@ -216,6 +222,12 @@ func wndproc(hwnd, msg, wp, lp uintptr) uintptr {
 }
 
 func (w *webview) Create(debug bool, window unsafe.Pointer) bool {
+	// This function signature stopped making sense a long time ago.
+	// It is but legacy cruft at this point.
+	return w.CreateWithOptions(WindowOptions{})
+}
+
+func (w *webview) CreateWithOptions(opts WindowOptions) bool {
 	var hinstance windows.Handle
 	_ = windows.GetModuleHandleEx(0, nil, &hinstance)
 
@@ -235,7 +247,7 @@ func (w *webview) Create(debug bool, window unsafe.Pointer) bool {
 	}
 	_, _, _ = w32.User32RegisterClassExW.Call(uintptr(unsafe.Pointer(&wc)))
 
-	windowName, _ := windows.UTF16PtrFromString("")
+	windowName, _ := windows.UTF16PtrFromString(opts.Title)
 	w.hwnd, _, _ = w32.User32CreateWindowExW.Call(
 		0,
 		uintptr(unsafe.Pointer(className)),
