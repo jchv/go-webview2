@@ -1,10 +1,11 @@
 package w32
 
 import (
-	"golang.org/x/sys/windows"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 var (
@@ -38,6 +39,8 @@ var (
 	User32SetWindowLongPtrW  = user32.NewProc("SetWindowLongPtrW")
 	User32AdjustWindowRect   = user32.NewProc("AdjustWindowRect")
 	User32SetWindowPos       = user32.NewProc("SetWindowPos")
+	User32IsDialogMessage    = user32.NewProc("IsDialogMessage")
+	User32GetAncestor        = user32.NewProc("GetAncestor")
 )
 
 const (
@@ -66,6 +69,12 @@ const (
 	WMNCLButtonDown = 0x00A1
 	WMMoving        = 0x0216
 	WMApp           = 0x8000
+)
+
+const (
+	GAParent    = 1
+	GARoot      = 2
+	GARootOwner = 3
 )
 
 const (
