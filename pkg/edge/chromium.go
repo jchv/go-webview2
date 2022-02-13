@@ -16,6 +16,7 @@ import (
 
 type Chromium struct {
 	hwnd                  uintptr
+	focusOnInit           bool
 	controller            *ICoreWebView2Controller
 	webview               *ICoreWebView2
 	inited                uintptr
@@ -216,6 +217,10 @@ func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller
 
 	atomic.StoreUintptr(&e.inited, 1)
 
+	if e.focusOnInit {
+		e.Focus()
+	}
+
 	return 0
 }
 
@@ -343,6 +348,7 @@ func (e *Chromium) NotifyParentWindowPositionChanged() error {
 
 func (e *Chromium) Focus() {
 	if e.controller == nil {
+		e.focusOnInit = true
 		return
 	}
 	_ = e.controller.MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC)
