@@ -63,6 +63,7 @@ const (
 	WMDestroy       = 0x0002
 	WMMove          = 0x0003
 	WMSize          = 0x0005
+	WMActivate      = 0x0006
 	WMClose         = 0x0010
 	WMQuit          = 0x0012
 	WMGetMinMaxInfo = 0x0024
@@ -89,6 +90,12 @@ const (
 	WSSysMenu          = 0x00080000
 	WSMinimizeBox      = 0x00020000
 	WSOverlappedWindow = (WSOverlapped | WSCaption | WSSysMenu | WSThickFrame | WSMinimizeBox | WSMaximizeBox)
+)
+
+const (
+	WAInactive    = 0
+	WAActive      = 1
+	WAActiveClick = 2
 )
 
 type WndClassExW struct {

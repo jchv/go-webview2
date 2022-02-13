@@ -340,3 +340,10 @@ func (e *Chromium) NotifyParentWindowPositionChanged() error {
 	}
 	return e.controller.NotifyParentWindowPositionChanged()
 }
+
+func (e *Chromium) Focus() {
+	if e.controller == nil {
+		return
+	}
+	_ = e.controller.MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC)
+}

@@ -42,12 +42,14 @@ type browser interface {
 	Init(script string)
 	Eval(script string)
 	NotifyParentWindowPositionChanged() error
+	Focus()
 }
 
 type webview struct {
 	hwnd       uintptr
 	mainthread uintptr
 	browser    browser
+	autofocus  bool
 	maxsz      w32.Point
 	minsz      w32.Point
 	m          sync.Mutex
@@ -60,10 +62,19 @@ type WindowOptions struct {
 }
 
 type WebViewOptions struct {
-	Window   unsafe.Pointer
-	Debug    bool
+	Window unsafe.Pointer
+	Debug  bool
+
+	// DataPath specifies the datapath for the WebView2 runtime to use for the
+	// browser instance.
 	DataPath string
 
+	// AutoFocus will try to keep the WebView2 widget focused when the window
+	// is focused.
+	AutoFocus bool
+
+	// WindowOptions customizes the window that is created to embed the
+	// WebView2 widget.
 	WindowOptions WindowOptions
 }
 
@@ -81,6 +92,7 @@ func NewWindow(debug bool, window unsafe.Pointer) WebView {
 func NewWithOptions(options WebViewOptions) WebView {
 	w := &webview{}
 	w.bindings = map[string]interface{}{}
+	w.autofocus = options.AutoFocus
 
 	chromium := edge.NewChromium()
 	chromium.MessageCallback = w.msgcb
@@ -198,6 +210,13 @@ func wndproc(hwnd, msg, wp, lp uintptr) uintptr {
 			return r
 		case w32.WMSize:
 			w.browser.Resize()
+		case w32.WMActivate:
+			if wp == w32.WAInactive {
+				break
+			}
+			if w.autofocus {
+				w.browser.Focus()
+			}
 		case w32.WMClose:
 			_, _, _ = w32.User32DestroyWindow.Call(hwnd)
 		case w32.WMDestroy:
