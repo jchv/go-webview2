@@ -8,7 +8,8 @@ import (
 
 func main() {
 	w := webview2.NewWithOptions(webview2.WebViewOptions{
-		Debug: true,
+		Debug:     true,
+		AutoFocus: true,
 		WindowOptions: webview2.WindowOptions{
 			Title: "Minimal webview example",
 		},
