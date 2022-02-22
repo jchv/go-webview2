@@ -45,9 +45,6 @@ type browser interface {
 	Focus()
 }
 
-type apiContext struct {
-}
-
 type webview struct {
 	hwnd       uintptr
 	mainthread uintptr
