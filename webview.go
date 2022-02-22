@@ -45,6 +45,9 @@ type browser interface {
 	Focus()
 }
 
+type apiContext struct {
+}
+
 type webview struct {
 	hwnd       uintptr
 	mainthread uintptr
@@ -54,6 +57,7 @@ type webview struct {
 	minsz      w32.Point
 	m          sync.Mutex
 	bindings   map[string]interface{}
+	wv2api     func(string) interface{}
 	dispatchq  []func()
 }
 
@@ -64,6 +68,10 @@ type WindowOptions struct {
 type WebViewOptions struct {
 	Window unsafe.Pointer
 	Debug  bool
+
+	// WebView2API provides a WebView2API class to JavaScript client when set
+	// to a handler function.
+	WebView2API func(string) interface{}
 
 	// DataPath specifies the datapath for the WebView2 runtime to use for the
 	// browser instance.
@@ -105,6 +113,12 @@ func NewWithOptions(options WebViewOptions) WebView {
 	if !w.CreateWithOptions(options.WindowOptions) {
 		return nil
 	}
+
+	if options.WebView2API != nil {
+		w.initWebView2Api()
+		w.wv2api = options.WebView2API
+	}
+
 	return w
 }
 
@@ -112,6 +126,11 @@ type rpcMessage struct {
 	ID     int               `json:"id"`
 	Method string            `json:"method"`
 	Params []json.RawMessage `json:"params"`
+}
+
+type rpcResponse struct {
+	ID      int         `json:"id"`
+	Payload interface{} `json:"payload"`
 }
 
 func jsString(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
@@ -124,19 +143,75 @@ func (w *webview) msgcb(msg string) {
 	}
 
 	id := strconv.Itoa(d.ID)
-	if res, err := w.callbinding(d); err != nil {
-		w.Dispatch(func() {
-			w.Eval("window._rpc[" + id + "].reject(" + jsString(err.Error()) + "); window._rpc[" + id + "] = undefined")
-		})
-	} else if b, err := json.Marshal(res); err != nil {
-		w.Dispatch(func() {
-			w.Eval("window._rpc[" + id + "].reject(" + jsString(err.Error()) + "); window._rpc[" + id + "] = undefined")
-		})
+	if d.Method == "__webview2_api__" {
+		result := w.wv2api(string(d.Params[0]))
+		response := rpcResponse{
+			ID:      d.ID,
+			Payload: result,
+		}
+
+		encoded, err := json.Marshal(response)
+		if err != nil {
+			log.Printf("invalid RPC response: %v", err)
+			return
+		}
+
+		w.PostMessage(string(encoded))
 	} else {
-		w.Dispatch(func() {
-			w.Eval("window._rpc[" + id + "].resolve(" + string(b) + "); window._rpc[" + id + "] = undefined")
-		})
+		if res, err := w.callbinding(d); err != nil {
+			w.Dispatch(func() {
+				w.Eval("window._rpc[" + id + "].reject(" + jsString(err.Error()) + "); window._rpc[" + id + "] = undefined")
+			})
+		} else if b, err := json.Marshal(res); err != nil {
+			w.Dispatch(func() {
+				w.Eval("window._rpc[" + id + "].reject(" + jsString(err.Error()) + "); window._rpc[" + id + "] = undefined")
+			})
+		} else {
+			w.Dispatch(func() {
+				w.Eval("window._rpc[" + id + "].resolve(" + string(b) + "); window._rpc[" + id + "] = undefined")
+			})
+		}
 	}
+}
+
+func (w *webview) initWebView2Api() {
+	script := `class WebView2API extends EventTarget {
+  #handlers = {};
+  #id = 0;
+  constructor() {
+    super();
+
+    window.addEventListener("message", (event) => {
+      const data = JSON.parse(event.data)
+      const handler = this.#handlers[data.id];
+      this.dispatchEvent(new CustomEvent("message", { detail: event }));
+
+      if (handler) {
+		handler.resolve(data.payload);
+      }
+
+      delete this.#handlers[data.id];
+    });
+  }
+
+  async send(payload) {
+    return new Promise((resolve, reject) => {
+      if ("chrome" in window && "webview" in window.chrome) {
+        window.chrome.webview.postMessage(
+          JSON.stringify({ id: this.#id, method: "__webview2_api__", params: [payload] })
+        );
+        this.#handlers[this.#id] = { resolve, reject };
+        this.#id++;
+      } else {
+        console.error("There is no webview context");
+      }
+    });
+  }
+}
+
+window.WebView2API = WebView2API;
+`
+	w.Init(script)
 }
 
 func (w *webview) callbinding(d rpcMessage) (interface{}, error) {
@@ -390,6 +465,19 @@ func (w *webview) Dispatch(f func()) {
 	w.dispatchq = append(w.dispatchq, f)
 	w.m.Unlock()
 	_, _, _ = w32.User32PostThreadMessageW.Call(w.mainthread, w32.WMApp, 0, 0)
+}
+
+func (w *webview) PostMessage(message string) error {
+	encoded, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
+
+	w.Dispatch(func() {
+		w.Eval("window.postMessage(" + string(encoded) + ")")
+	})
+
+	return nil
 }
 
 func (w *webview) Bind(name string, f interface{}) error {

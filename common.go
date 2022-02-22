@@ -77,4 +77,9 @@ type WebView interface {
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
+
+	// PostMessage imitates a window.postMessage call. It uses webview.Eval under the hood.
+	// It takes a message string, this message should be JSON string or it will
+	// throw an error on the client side.
+	PostMessage(message string) error
 }
