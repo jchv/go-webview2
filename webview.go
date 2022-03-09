@@ -153,7 +153,12 @@ func (w *webview) msgcb(msg string) {
 			return
 		}
 
-		w.PostMessage(string(encoded))
+		err = w.PostMessage(string(encoded))
+
+		if err != nil {
+			log.Printf("could not encode message: %v", err)
+			return
+		}
 	} else {
 		if res, err := w.callbinding(d); err != nil {
 			w.Dispatch(func() {
