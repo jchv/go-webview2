@@ -3,7 +3,7 @@ package edge
 import (
 	"unsafe"
 
-	"github.com/jchv/go-webview2/internal/w32"
+	"github.com/CanPacis/go-webview2/internal/w32"
 	"golang.org/x/sys/windows"
 )
 

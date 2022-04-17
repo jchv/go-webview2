@@ -5,15 +5,12 @@ package webview2
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
-	"reflect"
-	"strconv"
 	"sync"
 	"unsafe"
 
-	"github.com/jchv/go-webview2/internal/w32"
-	"github.com/jchv/go-webview2/pkg/edge"
+	"github.com/CanPacis/go-webview2/internal/w32"
+	"github.com/CanPacis/go-webview2/pkg/edge"
 
 	"golang.org/x/sys/windows"
 )
@@ -53,7 +50,6 @@ type webview struct {
 	maxsz      w32.Point
 	minsz      w32.Point
 	m          sync.Mutex
-	bindings   map[string]interface{}
 	wv2api     func(string) interface{}
 	dispatchq  []func()
 }
@@ -96,7 +92,6 @@ func NewWindow(debug bool, window unsafe.Pointer) WebView {
 // NewWithOptions creates a new webview using the provided options.
 func NewWithOptions(options WebViewOptions) WebView {
 	w := &webview{}
-	w.bindings = map[string]interface{}{}
 	w.autofocus = options.AutoFocus
 
 	chromium := edge.NewChromium()
@@ -139,7 +134,6 @@ func (w *webview) msgcb(msg string) {
 		return
 	}
 
-	id := strconv.Itoa(d.ID)
 	if d.Method == "__webview2_api__" {
 		result := w.wv2api(string(d.Params[0]))
 		response := rpcResponse{
@@ -160,19 +154,7 @@ func (w *webview) msgcb(msg string) {
 			return
 		}
 	} else {
-		if res, err := w.callbinding(d); err != nil {
-			w.Dispatch(func() {
-				w.Eval("window._rpc[" + id + "].reject(" + jsString(err.Error()) + "); window._rpc[" + id + "] = undefined")
-			})
-		} else if b, err := json.Marshal(res); err != nil {
-			w.Dispatch(func() {
-				w.Eval("window._rpc[" + id + "].reject(" + jsString(err.Error()) + "); window._rpc[" + id + "] = undefined")
-			})
-		} else {
-			w.Dispatch(func() {
-				w.Eval("window._rpc[" + id + "].resolve(" + string(b) + "); window._rpc[" + id + "] = undefined")
-			})
-		}
+		log.Print("unknown opcode")
 	}
 }
 
@@ -214,66 +196,6 @@ func (w *webview) initWebView2Api() {
 window.WebView2API = WebView2API;
 `
 	w.Init(script)
-}
-
-func (w *webview) callbinding(d rpcMessage) (interface{}, error) {
-	w.m.Lock()
-	f, ok := w.bindings[d.Method]
-	w.m.Unlock()
-	if !ok {
-		return nil, nil
-	}
-
-	v := reflect.ValueOf(f)
-	isVariadic := v.Type().IsVariadic()
-	numIn := v.Type().NumIn()
-	if (isVariadic && len(d.Params) < numIn-1) || (!isVariadic && len(d.Params) != numIn) {
-		return nil, errors.New("function arguments mismatch")
-	}
-	args := []reflect.Value{}
-	for i := range d.Params {
-		var arg reflect.Value
-		if isVariadic && i >= numIn-1 {
-			arg = reflect.New(v.Type().In(numIn - 1).Elem())
-		} else {
-			arg = reflect.New(v.Type().In(i))
-		}
-		if err := json.Unmarshal(d.Params[i], arg.Interface()); err != nil {
-			return nil, err
-		}
-		args = append(args, arg.Elem())
-	}
-
-	errorType := reflect.TypeOf((*error)(nil)).Elem()
-	res := v.Call(args)
-	switch len(res) {
-	case 0:
-		// No results from the function, just return nil
-		return nil, nil
-
-	case 1:
-		// One result may be a value, or an error
-		if res[0].Type().Implements(errorType) {
-			if res[0].Interface() != nil {
-				return nil, res[0].Interface().(error)
-			}
-			return nil, nil
-		}
-		return res[0].Interface(), nil
-
-	case 2:
-		// Two results: first one is value, second is error
-		if !res[1].Type().Implements(errorType) {
-			return nil, errors.New("second return value must be an error")
-		}
-		if res[1].Interface() == nil {
-			return res[0].Interface(), nil
-		}
-		return res[0].Interface(), res[1].Interface().(error)
-
-	default:
-		return nil, errors.New("unexpected number of return values")
-	}
 }
 
 func wndproc(hwnd, msg, wp, lp uintptr) uintptr {
@@ -478,40 +400,6 @@ func (w *webview) PostMessage(message string) error {
 	w.Dispatch(func() {
 		w.Eval("window.postMessage(" + string(encoded) + ")")
 	})
-
-	return nil
-}
-
-func (w *webview) Bind(name string, f interface{}) error {
-	v := reflect.ValueOf(f)
-	if v.Kind() != reflect.Func {
-		return errors.New("only functions can be bound")
-	}
-	if n := v.Type().NumOut(); n > 2 {
-		return errors.New("function may only return a value or a value+error")
-	}
-	w.m.Lock()
-	w.bindings[name] = f
-	w.m.Unlock()
-
-	w.Init("(function() { var name = " + jsString(name) + ";" + `
-		var RPC = window._rpc = (window._rpc || {nextSeq: 1});
-		window[name] = function() {
-		  var seq = RPC.nextSeq++;
-		  var promise = new Promise(function(resolve, reject) {
-			RPC[seq] = {
-			  resolve: resolve,
-			  reject: reject,
-			};
-		  });
-		  window.external.invoke(JSON.stringify({
-			id: seq,
-			method: name,
-			params: Array.prototype.slice.call(arguments),
-		  }));
-		  return promise;
-		}
-	})()`)
 
 	return nil
 }

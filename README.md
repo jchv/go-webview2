@@ -1,4 +1,4 @@
-[![Go](https://github.com/jchv/go-webview2/actions/workflows/go.yml/badge.svg)](https://github.com/jchv/go-webview2/actions/workflows/go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/jchv/go-webview2)](https://goreportcard.com/report/github.com/jchv/go-webview2) [![Go Reference](https://pkg.go.dev/badge/github.com/jchv/go-webview2.svg)](https://pkg.go.dev/github.com/jchv/go-webview2)
+[![Go](https://github.com/CanPacis/go-webview2/actions/workflows/go.yml/badge.svg)](https://github.com/CanPacis/go-webview2/actions/workflows/go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/CanPacis/go-webview2)](https://goreportcard.com/report/github.com/CanPacis/go-webview2) [![Go Reference](https://pkg.go.dev/badge/github.com/CanPacis/go-webview2.svg)](https://pkg.go.dev/github.com/CanPacis/go-webview2)
 
 # go-webview2
 This package provides an interface for using the Microsoft Edge WebView2 component with Go. It is based on [webview/webview](https://github.com/webview/webview) and provides a compatible API.
