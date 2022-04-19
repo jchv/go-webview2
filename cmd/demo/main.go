@@ -11,7 +11,9 @@ func main() {
 		Debug:     true,
 		AutoFocus: true,
 		WindowOptions: webview2.WindowOptions{
-			Title: "Minimal webview example",
+			Title:  "Minimal webview example",
+			Width:  800,
+			Height: 600,
 		},
 	})
 	if w == nil {
