@@ -58,7 +58,9 @@ type webview struct {
 }
 
 type WindowOptions struct {
-	Title string
+	Title  string
+	Width  uint
+	Height uint
 }
 
 type WebViewOptions struct {
@@ -267,6 +269,15 @@ func (w *webview) CreateWithOptions(opts WindowOptions) bool {
 	_, _, _ = w32.User32RegisterClassExW.Call(uintptr(unsafe.Pointer(&wc)))
 
 	windowName, _ := windows.UTF16PtrFromString(opts.Title)
+
+	windowWidth := opts.Width
+	if windowWidth == 0 {
+		windowWidth = 640
+	}
+	windowHeight := opts.Height
+	if windowHeight == 0 {
+		windowHeight = 480
+	}
 	w.hwnd, _, _ = w32.User32CreateWindowExW.Call(
 		0,
 		uintptr(unsafe.Pointer(className)),
@@ -274,8 +285,8 @@ func (w *webview) CreateWithOptions(opts WindowOptions) bool {
 		0xCF0000,   // WS_OVERLAPPEDWINDOW
 		0x80000000, // CW_USEDEFAULT
 		0x80000000, // CW_USEDEFAULT
-		640,
-		480,
+		uintptr(windowWidth),
+		uintptr(windowHeight),
 		0,
 		0,
 		uintptr(hinstance),
