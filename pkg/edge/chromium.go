@@ -31,7 +31,6 @@ type Chromium struct {
 	environment *ICoreWebView2Environment
 
 	// Settings
-	Debug    bool
 	DataPath string
 
 	// permissions

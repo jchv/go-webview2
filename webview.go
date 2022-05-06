@@ -61,6 +61,8 @@ type WindowOptions struct {
 	Title  string
 	Width  uint
 	Height uint
+	IconId uint
+	Center bool
 }
 
 type WebViewOptions struct {
@@ -98,7 +100,6 @@ func NewWithOptions(options WebViewOptions) WebView {
 
 	chromium := edge.NewChromium()
 	chromium.MessageCallback = w.msgcb
-	chromium.Debug = options.Debug
 	chromium.DataPath = options.DataPath
 	chromium.SetPermission(edge.CoreWebView2PermissionKindClipboardRead, edge.CoreWebView2PermissionStateAllow)
 
@@ -107,6 +108,22 @@ func NewWithOptions(options WebViewOptions) WebView {
 	if !w.CreateWithOptions(options.WindowOptions) {
 		return nil
 	}
+
+	settings, err := chromium.GetSettings()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// disable context menu
+	err = settings.PutAreDefaultContextMenusEnabled(options.Debug)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// disable developer tools
+	err = settings.PutAreDevToolsEnabled(options.Debug)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return w
 }
 
@@ -252,10 +269,16 @@ func (w *webview) CreateWithOptions(opts WindowOptions) bool {
 	var hinstance windows.Handle
 	_ = windows.GetModuleHandleEx(0, nil, &hinstance)
 
-	icow, _, _ := w32.User32GetSystemMetrics.Call(w32.SystemMetricsCxIcon)
-	icoh, _, _ := w32.User32GetSystemMetrics.Call(w32.SystemMetricsCyIcon)
-
-	icon, _, _ := w32.User32LoadImageW.Call(uintptr(hinstance), 32512, icow, icoh, 0)
+	var icon uintptr
+	if opts.IconId == 0 {
+		// load default icon
+		icow, _, _ := w32.User32GetSystemMetrics.Call(w32.SystemMetricsCxIcon)
+		icoh, _, _ := w32.User32GetSystemMetrics.Call(w32.SystemMetricsCyIcon)
+		icon, _, _ = w32.User32LoadImageW.Call(uintptr(hinstance), 32512, icow, icoh, 0)
+	} else {
+		// load icon from resource
+		icon, _, _ = w32.User32LoadImageW.Call(uintptr(hinstance), uintptr(opts.IconId), 1, 0, 0, w32.LR_DEFAULTSIZE|w32.LR_SHARED)
+	}
 
 	className, _ := windows.UTF16PtrFromString("webview")
 	wc := w32.WndClassExW{
@@ -278,13 +301,28 @@ func (w *webview) CreateWithOptions(opts WindowOptions) bool {
 	if windowHeight == 0 {
 		windowHeight = 480
 	}
+
+	var posX, posY uint
+	if opts.Center {
+		// get screen size
+		screenWidth, _, _ := w32.User32GetSystemMetrics.Call(w32.SM_CXSCREEN)
+		screenHeight, _, _ := w32.User32GetSystemMetrics.Call(w32.SM_CYSCREEN)
+		// calculate window position
+		posX = (uint(screenWidth) - windowWidth) / 2
+		posY = (uint(screenHeight) - windowHeight) / 2
+	} else {
+		// use default position
+		posX = w32.CW_USEDEFAULT
+		posY = w32.CW_USEDEFAULT
+	}
+
 	w.hwnd, _, _ = w32.User32CreateWindowExW.Call(
 		0,
 		uintptr(unsafe.Pointer(className)),
 		uintptr(unsafe.Pointer(windowName)),
-		0xCF0000,   // WS_OVERLAPPEDWINDOW
-		0x80000000, // CW_USEDEFAULT
-		0x80000000, // CW_USEDEFAULT
+		0xCF0000, // WS_OVERLAPPEDWINDOW
+		uintptr(posX),
+		uintptr(posY),
 		uintptr(windowWidth),
 		uintptr(windowHeight),
 		0,
