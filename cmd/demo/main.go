@@ -14,6 +14,8 @@ func main() {
 			Title:  "Minimal webview example",
 			Width:  800,
 			Height: 600,
+			IconId: 2, // icon resource id
+			Center: true,
 		},
 	})
 	if w == nil {
