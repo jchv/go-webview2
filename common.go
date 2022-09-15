@@ -77,4 +77,18 @@ type WebView interface {
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
+
+	// NavigationStarting binds a callback function for right before the webview2
+	// perform a navigation
+	//
+	// f must be a function
+	// f must return true, to proceed with the navigation
+	// f must return false, to cancel the navigation
+	NavigationStarting(f func(additionalAllowedFrameAncestors string, isRedirected bool, isUserInitiated bool, navigationId uint64, uri string) bool) error
+
+	// NavigationCompleted binds a callback function for right after the webview2
+	// has performed a navigation
+	//
+	// f must be a function
+	NavigationCompleted(f func(httpStatusCode int32, isSuccess bool, navigationId uint64, webErrorStatus int32)) error
 }
