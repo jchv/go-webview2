@@ -27,6 +27,7 @@ type Chromium struct {
 	webResourceRequested  *iCoreWebView2WebResourceRequestedEventHandler
 	acceleratorKeyPressed *ICoreWebView2AcceleratorKeyPressedEventHandler
 	navigationCompleted   *ICoreWebView2NavigationCompletedEventHandler
+	navigationStarting    *ICoreWebView2NavigationStartingEventHandler
 
 	environment *ICoreWebView2Environment
 
@@ -40,7 +41,8 @@ type Chromium struct {
 	// Callbacks
 	MessageCallback              func(string)
 	WebResourceRequestedCallback func(request *ICoreWebView2WebResourceRequest, args *ICoreWebView2WebResourceRequestedEventArgs)
-	NavigationCompletedCallback  func(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs)
+	NavigationCompletedCallback  func(httpStatusCode int32, isSuccess bool, navigationId uint64, webErrorStatus int32)
+	NavigationStartingCallback   func(additionalAllowedFrameAncestors string, isRedirected bool, isUserInitiated bool, navigationId uint64, uri string) bool
 	AcceleratorKeyCallback       func(uint) bool
 }
 
@@ -64,6 +66,7 @@ func NewChromium() *Chromium {
 	e.webResourceRequested = newICoreWebView2WebResourceRequestedEventHandler(e)
 	e.acceleratorKeyPressed = newICoreWebView2AcceleratorKeyPressedEventHandler(e)
 	e.navigationCompleted = newICoreWebView2NavigationCompletedEventHandler(e)
+	e.navigationStarting = newICoreWebView2NavigationStartingEventHandler(e)
 	e.permissions = make(map[CoreWebView2PermissionKind]CoreWebView2PermissionState)
 
 	return e
@@ -211,6 +214,11 @@ func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller
 		uintptr(unsafe.Pointer(e.navigationCompleted)),
 		uintptr(unsafe.Pointer(&token)),
 	)
+	_, _, _ = e.webview.vtbl.AddNavigationStarting.Call(
+		uintptr(unsafe.Pointer(e.webview)),
+		uintptr(unsafe.Pointer(e.navigationStarting)),
+		uintptr(unsafe.Pointer(&token)),
+	)
 
 	_ = e.controller.AddAcceleratorKeyPressed(e.acceleratorKeyPressed, &token)
 
@@ -331,8 +339,83 @@ func boolToInt(input bool) int {
 
 func (e *Chromium) NavigationCompleted(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs) uintptr {
 	if e.NavigationCompletedCallback != nil {
-		e.NavigationCompletedCallback(sender, args)
+		var isSuccess uint
+		var _, _, _ = args.vtbl.GetIsSuccess.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&isSuccess)),
+		)
+
+		var webErrorStatus int32
+		var _, _, _ = args.vtbl.GetWebErrorStatus.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&webErrorStatus)),
+		)
+
+		var navigationId uint64
+		var _, _, _ = args.vtbl.GetNavigationId.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&navigationId)),
+		)
+
+		var httpStatusCode int32
+		var _, _, _ = args.vtbl.GetHttpStatusCode.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&httpStatusCode)),
+		)
+
+		e.NavigationCompletedCallback(httpStatusCode, isSuccess == 1, navigationId, webErrorStatus)
 	}
+	return 0
+}
+
+func (e *Chromium) NavigationStarting(sender *ICoreWebView2, args *ICoreWebView2NavigationStartingEventArgs) uintptr {
+	if e.NavigationStartingCallback != nil {
+
+		var navigationId uint64
+		var _, _, _ = args.vtbl.GetNavigationId.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&navigationId)),
+		)
+
+		var uriPtr *uint16
+		var _, _, _ = args.vtbl.GetUri.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&uriPtr)),
+		)
+		var uri = w32.Utf16PtrToString(uriPtr)
+
+		var additionalAllowedFrameAncestorsPtr *uint16
+		var _, _, _ = args.vtbl.GetAdditionalAllowedFrameAncestors.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&additionalAllowedFrameAncestorsPtr)),
+		)
+		var additionalAllowedFrameAncestors = w32.Utf16PtrToString(additionalAllowedFrameAncestorsPtr)
+
+		var isRedirected uint
+		var _, _, _ = args.vtbl.GetIsRedirected.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&isRedirected)),
+		)
+
+		var isUserInitiated uint
+		var _, _, _ = args.vtbl.GetIsUserInitiated.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&isUserInitiated)),
+		)
+
+		var proceed = e.NavigationStartingCallback(additionalAllowedFrameAncestors, isRedirected == 1, isUserInitiated == 1, navigationId, uri)
+
+		if proceed {
+			return 0
+		}
+
+		var res uint
+		var _, _, _ = args.vtbl.PutCancel.Call(
+			uintptr(unsafe.Pointer(args)),
+			uintptr(unsafe.Pointer(&res)),
+		)
+	}
+
 	return 0
 }
 

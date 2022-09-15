@@ -18,6 +18,11 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+const (
+	NavigationStartingBindingName  = "navigation-starting"
+	NavigationCompletedBindingName = "navigation-completed"
+)
+
 var (
 	windowContext     = map[uintptr]interface{}{}
 	windowContextSync sync.RWMutex
@@ -100,6 +105,8 @@ func NewWithOptions(options WebViewOptions) WebView {
 
 	chromium := edge.NewChromium()
 	chromium.MessageCallback = w.msgcb
+	chromium.NavigationCompletedCallback = w.navigationCompletedCallback
+	chromium.NavigationStartingCallback = w.navigationStartingCallback
 	chromium.DataPath = options.DataPath
 	chromium.SetPermission(edge.CoreWebView2PermissionKindClipboardRead, edge.CoreWebView2PermissionStateAllow)
 
@@ -471,6 +478,72 @@ func (w *webview) Bind(name string, f interface{}) error {
 		  return promise;
 		}
 	})()`)
+
+	return nil
+}
+
+func (w *webview) navigationCompletedCallback(httpStatusCode int32, isSuccess bool, navigationId uint64, webErrorStatus int32) {
+	w.m.Lock()
+	var f, ok = w.bindings[NavigationCompletedBindingName]
+	w.m.Unlock()
+
+	if !ok {
+		return
+	}
+
+	var fValue = reflect.ValueOf(f)
+	var fArgs = []reflect.Value{
+		reflect.ValueOf(httpStatusCode),
+		reflect.ValueOf(isSuccess),
+		reflect.ValueOf(navigationId),
+		reflect.ValueOf(webErrorStatus),
+	}
+	fValue.Call(fArgs)
+}
+
+func (w *webview) NavigationCompleted(f func(httpStatusCode int32, isSuccess bool, navigationId uint64, webErrorStatus int32)) error {
+	w.m.Lock()
+	w.bindings[NavigationCompletedBindingName] = f
+	w.m.Unlock()
+
+	return nil
+}
+
+func (w *webview) navigationStartingCallback(additionalAllowedFrameAncestors string, isRedirected bool, isUserInitiated bool, navigationId uint64, uri string) bool {
+	w.m.Lock()
+	var f, ok = w.bindings[NavigationStartingBindingName]
+	w.m.Unlock()
+
+	if !ok {
+		return true
+	}
+
+	var fValue = reflect.ValueOf(f)
+	var fArgs = []reflect.Value{
+		reflect.ValueOf(additionalAllowedFrameAncestors),
+		reflect.ValueOf(isRedirected),
+		reflect.ValueOf(isUserInitiated),
+		reflect.ValueOf(navigationId),
+		reflect.ValueOf(uri),
+	}
+	var returnedValues = fValue.Call(fArgs)
+
+	if len(returnedValues) == 0 {
+		return true
+	}
+
+	var firstValue = returnedValues[0]
+	if firstValue.Kind() != reflect.Bool {
+		return true
+	}
+
+	return firstValue.Bool()
+}
+
+func (w *webview) NavigationStarting(f func(additionalAllowedFrameAncestors string, isRedirected bool, isUserInitiated bool, navigationId uint64, uri string) bool) error {
+	w.m.Lock()
+	w.bindings[NavigationStartingBindingName] = f
+	w.m.Unlock()
 
 	return nil
 }
