@@ -25,11 +25,5 @@ func main() {
 	defer w.Destroy()
 	w.SetSize(800, 600, webview2.HintFixed)
 	w.Navigate("https://en.m.wikipedia.org/wiki/Main_Page")
-	go TestClose(&w)
 	w.Run()
-}
-
-func TestClose(window *webview2.WebView) {
-	time.Sleep(time.Second * 2)
-	(*window).Destroy()
 }
