@@ -58,6 +58,10 @@ type WebView interface {
 	// properly, webview will re-encode it for you.
 	Navigate(url string)
 
+	// SetHtml sets the webview HTML directly.
+	// The origin of the page is `about:blank`.
+	SetHtml(html string)
+
 	// Init injects JavaScript code at the initialization of the new page. Every
 	// time the webview will open a the new page - this initialization code will
 	// be executed. It is guaranteed that code is executed before window.onload.

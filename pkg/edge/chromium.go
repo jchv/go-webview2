@@ -120,6 +120,13 @@ func (e *Chromium) Navigate(url string) {
 	)
 }
 
+func (e *Chromium) NavigateToString(htmlContent string) {
+	_, _, _ = e.webview.vtbl.NavigateToString.Call(
+		uintptr(unsafe.Pointer(e.webview)),
+		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(htmlContent))),
+	)
+}
+
 func (e *Chromium) Init(script string) {
 	_, _, _ = e.webview.vtbl.AddScriptToExecuteOnDocumentCreated.Call(
 		uintptr(unsafe.Pointer(e.webview)),
