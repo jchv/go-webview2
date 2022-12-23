@@ -106,7 +106,7 @@ const (
 
 const (
 	WSOverlapped       = 0x00000000
-	WSMaximizeBox      = 0x00020000
+	WSMaximizeBox      = 0x00010000
 	WSThickFrame       = 0x00040000
 	WSCaption          = 0x00C00000
 	WSSysMenu          = 0x00080000
