@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"unsafe"
 
@@ -42,6 +43,9 @@ type Chromium struct {
 	WebResourceRequestedCallback func(request *ICoreWebView2WebResourceRequest, args *ICoreWebView2WebResourceRequestedEventArgs)
 	NavigationCompletedCallback  func(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs)
 	AcceleratorKeyCallback       func(uint) bool
+
+	// Pointer Pinner
+	pinner runtime.Pinner
 }
 
 func NewChromium() *Chromium {
@@ -64,9 +68,20 @@ func NewChromium() *Chromium {
 	e.webResourceRequested = newICoreWebView2WebResourceRequestedEventHandler(e)
 	e.acceleratorKeyPressed = newICoreWebView2AcceleratorKeyPressedEventHandler(e)
 	e.navigationCompleted = newICoreWebView2NavigationCompletedEventHandler(e)
+	e.PinHanler(e.envCompleted)
+	e.PinHanler(e.controllerCompleted)
+	e.PinHanler(e.webMessageReceived)
+	e.PinHanler(e.permissionRequested)
+	e.PinHanler(e.webResourceRequested)
+	e.PinHanler(e.acceleratorKeyPressed)
+	e.PinHanler(e.navigationCompleted)
 	e.permissions = make(map[CoreWebView2PermissionKind]CoreWebView2PermissionState)
-
 	return e
+}
+
+func (e *Chromium) PinHanler(handler interface{}) interface{} {
+	e.pinner.Pin(handler)
+	return handler
 }
 
 func (e *Chromium) Embed(hwnd uintptr) bool {
