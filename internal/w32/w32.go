@@ -36,10 +36,10 @@ var (
 	User32PostMessageW       = user32.NewProc("PostMessageW")
 	User32SetWindowTextW     = user32.NewProc("SetWindowTextW")
 	User32PostThreadMessageW = user32.NewProc("PostThreadMessageW")
-	User32GetWindowLongPtrW  = user32.NewProc("GetWindowLongPtrW")
 	User32GetWindowLongW     = user32.NewProc("GetWindowLongW")
-	User32SetWindowLongPtrW  = user32.NewProc("SetWindowLongPtrW")
+	User32GetWindowLongPtrW  = user32.NewProc("GetWindowLongPtrW")
 	User32SetWindowLongW     = user32.NewProc("SetWindowLongW")
+	User32SetWindowLongPtrW  = user32.NewProc("SetWindowLongPtrW")
 	User32AdjustWindowRect   = user32.NewProc("AdjustWindowRect")
 	User32SetWindowPos       = user32.NewProc("SetWindowPos")
 	User32IsDialogMessage    = user32.NewProc("IsDialogMessage")
@@ -191,28 +191,4 @@ func SHCreateMemStream(data []byte) (uintptr, error) {
 	}
 
 	return ret, nil
-}
-
-func GetWindowLong(hwnd uintptr, index int) uintptr {
-	if unsafe.Sizeof(uintptr(0)) == 8 {
-		// 64-bit
-		ret, _, _ := User32GetWindowLongPtrW.Call(hwnd, uintptr(index))
-		return ret
-	} else {
-		// 32-bit
-		ret, _, _ := User32GetWindowLongW.Call(hwnd, uintptr(index))
-		return ret
-	}
-}
-
-func SetWindowLong(hwnd uintptr, index int, newLong uintptr) uintptr {
-	if unsafe.Sizeof(uintptr(0)) == 8 {
-		// 64-bit
-		ret, _, _ := User32SetWindowLongPtrW.Call(hwnd, uintptr(index), newLong)
-		return ret
-	} else {
-		// 32-bit
-		ret, _, _ := User32SetWindowLongW.Call(hwnd, uintptr(index), newLong)
-		return ret
-	}
 }
