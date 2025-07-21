@@ -404,13 +404,13 @@ func (w *webview) SetTitle(title string) {
 
 func (w *webview) SetSize(width int, height int, hints Hint) {
 	index := w32.GWLStyle
-	style, _, _ := w32.User32GetWindowLongPtrW.Call(w.hwnd, uintptr(index))
+	style := w32.GetWindowLong(w.hwnd, index)
 	if hints == HintFixed {
 		style &^= (w32.WSThickFrame | w32.WSMaximizeBox)
 	} else {
 		style |= (w32.WSThickFrame | w32.WSMaximizeBox)
 	}
-	_, _, _ = w32.User32SetWindowLongPtrW.Call(w.hwnd, uintptr(index), style)
+	w32.SetWindowLong(w.hwnd, index, style)
 
 	if hints == HintMax {
 		w.maxsz.X = int32(width)
