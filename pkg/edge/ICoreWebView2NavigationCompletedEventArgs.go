@@ -5,6 +5,7 @@ type _ICoreWebView2NavigationCompletedEventArgsVtbl struct {
 	GetIsSuccess      ComProc
 	GetWebErrorStatus ComProc
 	GetNavigationId   ComProc
+	GetHttpStatusCode ComProc
 }
 
 type ICoreWebView2NavigationCompletedEventArgs struct {
