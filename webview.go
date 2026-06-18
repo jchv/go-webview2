@@ -44,6 +44,7 @@ type browser interface {
 	Eval(script string)
 	NotifyParentWindowPositionChanged() error
 	Focus()
+	Show() error
 }
 
 type webview struct {
@@ -59,11 +60,12 @@ type webview struct {
 }
 
 type WindowOptions struct {
-	Title  string
-	Width  uint
-	Height uint
-	IconId uint
-	Center bool
+	Title       string
+	Width       uint
+	Height      uint
+	IconId      uint
+	Center      bool
+	StartHidden bool
 }
 
 type WebViewOptions struct {
@@ -333,7 +335,6 @@ func (w *webview) CreateWithOptions(opts WindowOptions) bool {
 	)
 	setWindowContext(w.hwnd, w)
 
-	_, _, _ = w32.User32ShowWindow.Call(w.hwnd, w32.SWShow)
 	_, _, _ = w32.User32UpdateWindow.Call(w.hwnd)
 	_, _, _ = w32.User32SetFocus.Call(w.hwnd)
 
@@ -341,7 +342,28 @@ func (w *webview) CreateWithOptions(opts WindowOptions) bool {
 		return false
 	}
 	w.browser.Resize()
+	if !opts.StartHidden {
+		_, _, _ = w32.User32ShowWindow.Call(w.hwnd, w32.SWShow)
+		_ = w.browser.Show()
+	}
 	return true
+}
+
+func (w *webview) Hide() {
+	_, _, _ = w32.User32ShowWindow.Call(w.hwnd, w32.SWHide)
+}
+
+func (w *webview) Show() {
+	ret, _, _ := w32.User32IsIconic.Call(w.hwnd)
+	isMinimized := ret != 0
+
+	if isMinimized {
+		_, _, _ = w32.User32ShowWindow.Call(w.hwnd, w32.SWRestore)
+	} else {
+		_, _, _ = w32.User32ShowWindow.Call(w.hwnd, w32.SWShow)
+	}
+
+	_ = w.browser.Show()
 }
 
 func (w *webview) Destroy() {

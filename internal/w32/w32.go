@@ -44,6 +44,7 @@ var (
 	User32SetWindowPos       = user32.NewProc("SetWindowPos")
 	User32IsDialogMessage    = user32.NewProc("IsDialogMessage")
 	User32GetAncestor        = user32.NewProc("GetAncestor")
+	User32IsIconic           = user32.NewProc("IsIconic")
 )
 
 const (
@@ -73,7 +74,9 @@ const (
 )
 
 const (
-	SWShow = 5
+	SWHide    = 0
+	SWShow    = 5
+	SWRestore = 9
 )
 
 const (

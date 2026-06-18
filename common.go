@@ -81,4 +81,11 @@ type WebView interface {
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
+
+	// Show shows the native window if hidden.
+	// It will also restore a minimized window.
+	Show()
+
+	// Hide hides the native window from the screen and taskbar.
+	Hide()
 }
