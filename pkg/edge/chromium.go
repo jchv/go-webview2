@@ -4,6 +4,7 @@
 package edge
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,6 +21,12 @@ type Chromium struct {
 	controller            *ICoreWebView2Controller
 	webview               *ICoreWebView2
 	inited                uintptr
+	// embedErr records an async environment/controller creation failure so Embed
+	// can return false (New then returns nil) instead of the process being taken
+	// down by log.Fatalf or a nil-pointer dereference. This is the session-0 /
+	// non-interactive-desktop case, where controller creation completes with a
+	// success HRESULT but a nil controller.
+	embedErr error
 	envCompleted          *iCoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
 	controllerCompleted   *iCoreWebView2CreateCoreWebView2ControllerCompletedHandler
 	webMessageReceived    *iCoreWebView2WebMessageReceivedEventHandler
@@ -109,6 +116,10 @@ func (e *Chromium) Embed(hwnd uintptr) bool {
 		_, _, _ = w32.User32TranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
 		_, _, _ = w32.User32DispatchMessageW.Call(uintptr(unsafe.Pointer(&msg)))
 	}
+	if e.embedErr != nil {
+		log.Printf("webview2: %v", e.embedErr)
+		return false
+	}
 	e.Init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}")
 	return true
 }
@@ -169,8 +180,10 @@ func (e *Chromium) Release() uintptr {
 }
 
 func (e *Chromium) EnvironmentCompleted(res uintptr, env *ICoreWebView2Environment) uintptr {
-	if int64(res) < 0 {
-		log.Fatalf("Creating environment failed with %08x", res)
+	if int32(res) < 0 || env == nil {
+		e.embedErr = fmt.Errorf("creating environment failed: hr=0x%08x, env nil=%t", uint32(res), env == nil)
+		atomic.StoreUintptr(&e.inited, 1) // unblock Embed's message pump
+		return 0
 	}
 	_, _, _ = env.vtbl.AddRef.Call(uintptr(unsafe.Pointer(env)))
 	e.environment = env
@@ -184,8 +197,10 @@ func (e *Chromium) EnvironmentCompleted(res uintptr, env *ICoreWebView2Environme
 }
 
 func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller *ICoreWebView2Controller) uintptr {
-	if int64(res) < 0 {
-		log.Fatalf("Creating controller failed with %08x", res)
+	if int32(res) < 0 || controller == nil {
+		e.embedErr = fmt.Errorf("creating controller failed: hr=0x%08x, controller nil=%t", uint32(res), controller == nil)
+		atomic.StoreUintptr(&e.inited, 1) // unblock Embed's message pump
+		return 0
 	}
 	_, _, _ = controller.vtbl.AddRef.Call(uintptr(unsafe.Pointer(controller)))
 	e.controller = controller
